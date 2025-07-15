@@ -37,33 +37,6 @@ The focus is on **Azure cloud architecture and DevOps practices** rather than cu
 - **Hosting**: Azure App Service with B1 tier
 - **Monitoring**: Application Insights for telemetry and diagnostics
 
-## Security & Best Practices
-
-### Enterprise Security Features
-- **Azure Entra ID Authentication**: Enterprise SSO with Easy Auth platform integration
-- **Secrets Management**: Azure Key Vault for all sensitive configuration
-- **Data Encryption**: HTTPS enforcement, TLS 1.2+, Azure SQL transparent encryption
-- **Input Protection**: Anti-forgery tokens, parameter validation, SQL injection prevention
-- **File Security**: Type validation, size limits, secure blob storage
-- **Infrastructure Security**: Managed identities, firewall rules, RBAC access control
-
-### Security Configuration Checklist
-- [ ] Configure App Registration redirect URI: `https://your-app.azurewebsites.net/.auth/login/aad/callback`
-- [ ] Enable App Service managed identity
-- [ ] Store all secrets in Azure Key Vault (connection strings, API keys)
-- [ ] Configure SQL Server firewall to allow Azure services
-- [ ] Enable HTTPS redirect and security headers
-- [ ] Set up Application Insights for security monitoring
-- [ ] Configure proper CORS policies
-- [ ] Enable Azure SQL Database auditing (optional)
-
-### Security Vulnerability Reporting
-If you discover security issues:
-1. **DO NOT** create public GitHub issues
-2. Contact the maintainers privately via email
-3. Provide detailed reproduction steps
-4. Allow time for assessment and patching before public disclosure
-
 ## Local Development Setup
 
 ### Prerequisites
@@ -158,7 +131,7 @@ az sql server create \
   --resource-group $RESOURCE_GROUP \
   --location $LOCATION \
   --admin-user arkhamadmin \
-  --admin-password "YourSecurePassword123!"
+  --admin-password "YourSecurePassword"
 
 az sql db create \
   --resource-group $RESOURCE_GROUP \
@@ -235,7 +208,7 @@ SQL_CONNECTION=$(az sql db show-connection-string \
   --server $SQL_SERVER \
   --name ArkhamChangeRequestDb | \
   sed 's/<username>/arkhamadmin/g' | \
-  sed 's/<password>/YourSecurePassword123!/g')
+  sed 's/<password>/YourSecurePassword/g')
 
 STORAGE_CONNECTION=$(az storage account show-connection-string \
   --name $STORAGE_ACCOUNT \
@@ -490,13 +463,6 @@ This project welcomes contributions focused on Azure integration and deployment 
 4. Run `dotnet restore && dotnet ef database update`
 5. Test locally with `dotnet run`
 
-### Code Standards
-- Follow Microsoft C# conventions
-- Use async/await for I/O operations
-- Implement proper error handling
-- Add XML documentation for public APIs
-- Include unit tests for business logic
-
 ## Learning Outcomes
 
 This project demonstrates practical experience with:
@@ -521,25 +487,6 @@ This project demonstrates practical experience with:
 - **Authentication UX**: Claims-based user experience
 - **Form Handling**: Validation, file uploads, error management
 - **Security Implementation**: Anti-forgery tokens, input sanitization
-
-## Acknowledgments
-
-This application was developed with significant assistance from:
-
-- **GitHub Copilot**: AI-powered code completion and suggestion
-- **Claude Sonnet 3.5**: Advanced AI assistance for architecture, troubleshooting, and best practices
-- **Microsoft Documentation**: Official Azure and ASP.NET Core guidance
-- **Azure Community**: Best practices and deployment patterns
-
-**Special Thanks:**
-The AI tools were invaluable for:
-- Rapid prototyping and Azure service integration
-- Security best practices and configuration guidance
-- Mobile-responsive CSS development
-- Troubleshooting deployment issues
-- Documentation and README creation
-
-This project demonstrates how AI-assisted development can accelerate learning of cloud platforms and modern web technologies, especially for infrastructure-focused practitioners transitioning to full-stack development.
 
 ## License
 
