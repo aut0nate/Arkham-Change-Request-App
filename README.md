@@ -1,10 +1,10 @@
-# Arkham IT Change Request Application
+# Arkham Change Management Application
 
-A professional enterprise IT Change Management system built with ASP.NET Core 8.0, featuring Azure Entra ID authentication, mobile-responsive design, and secure cloud hosting on Microsoft Azure.
+A change management application for a fictitious company named Arkham. Built with .NET and featuring Azure Entra ID authentication, mobile-responsive design, and secure cloud hosting on Microsoft Azure.
 
 > **Note**: This application was developed as a learning project focused on Azure services integration, deployment, and management rather than web development. It was built with significant assistance from **GitHub Copilot** and **Claude Sonnet 4**, demonstrating how AI tools can accelerate Azure-focused learning and development.
 
-## 🎯 Project Purpose
+## Project Purpose
 
 This project serves as a comprehensive example of:
 - **Azure Services Integration**: Entra ID, App Service, SQL Database, Key Vault, Blob Storage
@@ -14,19 +14,19 @@ This project serves as a comprehensive example of:
 
 The focus is on **Azure cloud architecture and DevOps practices** rather than custom web development.
 
-## 🚀 Features
+## Features
 
-- 🔐 **Enterprise Authentication**: Azure Entra ID integration with Easy Auth for secure employee access
-- 🎯 **Professional UI**: Dark-themed interface matching enterprise standards with mobile-responsive design
-- 📝 **Comprehensive Forms**: Full change request lifecycle with validation and file attachments
-- 📎 **File Management**: Secure file upload via Azure Blob Storage (PDF, DOC, DOCX, images)
-- 💾 **Persistent Storage**: Azure SQL Database with Entity Framework Core
-- 📱 **Mobile Optimized**: Touch-friendly interface for iPhone and mobile devices
-- ✅ **Real-time Validation**: Form validation with user-friendly error handling
-- � **Security First**: Azure Key Vault integration, HTTPS enforcement, anti-forgery protection
-- � **Monitoring**: Application Insights integration for telemetry and diagnostics
+- **Enterprise Authentication**: Azure Entra ID integration with Easy Auth for secure employee access
+- **Professional UI**: Dark-themed interface matching enterprise standards with mobile-responsive design
+- **Comprehensive Forms**: Full change request lifecycle with validation and file attachments
+- **File Management**: Secure file upload via Azure Blob Storage (PDF, DOC, DOCX, images)
+- **Persistent Storage**: Azure SQL Database with Entity Framework Core
+- **Mobile Optimized**: Touch-friendly interface for iPhone and mobile devices
+- **Real-time Validation**: Form validation with user-friendly error handling
+- **Security First**: Azure Key Vault integration, HTTPS enforcement, anti-forgery protection
+- **Monitoring**: Application Insights integration for telemetry and diagnostics
 
-## 🏗️ Architecture
+## Architecture
 
 - **Frontend**: ASP.NET Core 8.0 MVC with responsive CSS and mobile optimization
 - **Authentication**: Azure Entra ID with App Service Easy Auth
@@ -37,7 +37,7 @@ The focus is on **Azure cloud architecture and DevOps practices** rather than cu
 - **Hosting**: Azure App Service with B1 tier
 - **Monitoring**: Application Insights for telemetry and diagnostics
 
-## 🚨 Security & Best Practices
+## Security & Best Practices
 
 ### Enterprise Security Features
 - **Azure Entra ID Authentication**: Enterprise SSO with Easy Auth platform integration
@@ -64,7 +64,7 @@ If you discover security issues:
 3. Provide detailed reproduction steps
 4. Allow time for assessment and patching before public disclosure
 
-## 🛠️ Local Development Setup
+## Local Development Setup
 
 ### Prerequisites
 
@@ -119,7 +119,7 @@ If you discover security issues:
 6. **Access the application**
    - Open your browser and navigate to `https://localhost:5001`
 
-## ☁️ Complete Azure Deployment Guide
+## Complete Azure Deployment Guide
 
 ### Quick Start Prerequisites
 - Azure CLI installed and authenticated (`az login`)
@@ -328,7 +328,7 @@ Sensitive configuration values are stored in Azure Key Vault:
 - Storage account keys  
 - Application secrets
 
-## 📱 Mobile Responsive Design
+## Mobile Responsive Design
 
 The application features comprehensive mobile optimization:
 
@@ -345,7 +345,7 @@ The application features comprehensive mobile optimization:
 - **Small Mobile**: Under 480px
 - **Landscape**: Orientation-specific optimizations
 
-## 📁 File Upload Configuration
+## File Upload Configuration
 
 The application supports secure file uploads with the following specifications:
 
@@ -354,7 +354,7 @@ The application supports secure file uploads with the following specifications:
 - **Storage**: Azure Blob Storage with secure container access
 - **Security**: File type validation and virus scanning capabilities
 
-## 🔐 Security Implementation
+## Security Implementation
 
 ### Authentication Flow
 1. User accesses application
@@ -369,7 +369,7 @@ The application supports secure file uploads with the following specifications:
 - **Secrets**: Azure Key Vault with RBAC access control
 - **Application**: Anti-forgery tokens and input validation
 
-## 🗄️ Database Schema
+## Database Schema
 
 ### Core Tables
 
@@ -397,7 +397,7 @@ The application supports secure file uploads with the following specifications:
 - **FileSize**: File size in bytes
 - **UploadedDate**: Upload timestamp
 
-## 🛣️ API Endpoints
+## API Endpoints
 
 ### Change Request Management
 - `GET /ChangeRequest/Create` - New change request form
@@ -411,7 +411,7 @@ The application supports secure file uploads with the following specifications:
 - `GET /.auth/logout` - Sign out user
 - `GET /.auth/me` - Current user information (Easy Auth endpoint)
 
-## 📊 Monitoring and Diagnostics
+## Monitoring and Diagnostics
 
 ### Application Insights Integration
 - **Performance**: Response times and throughput metrics
@@ -439,7 +439,7 @@ The application includes health check endpoints for:
 - Azure Storage availability
 - Key Vault accessibility
 
-## 🚨 Troubleshooting Common Issues
+## Troubleshooting Common Issues
 
 ### Authentication Problems
 - **"AADSTS50011: Redirect URI mismatch"**: Verify App Registration redirect URI exactly matches `https://your-app.azurewebsites.net/.auth/login/aad/callback`
@@ -471,7 +471,7 @@ az sql db show --resource-group $RESOURCE_GROUP --server $SQL_SERVER --name Arkh
 az webapp auth show --resource-group $RESOURCE_GROUP --name $APP_NAME
 ```
 
-## 🤝 Contributing & Development
+## Contributing & Development
 
 ### Contributing Guidelines
 This project welcomes contributions focused on Azure integration and deployment improvements. Since this is primarily a learning project for Azure services:
@@ -497,7 +497,7 @@ This project welcomes contributions focused on Azure integration and deployment 
 - Add XML documentation for public APIs
 - Include unit tests for business logic
 
-## 🎓 Learning Outcomes
+## Learning Outcomes
 
 This project demonstrates practical experience with:
 
@@ -522,7 +522,7 @@ This project demonstrates practical experience with:
 - **Form Handling**: Validation, file uploads, error management
 - **Security Implementation**: Anti-forgery tokens, input sanitization
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 This application was developed with significant assistance from:
 
@@ -541,11 +541,11 @@ The AI tools were invaluable for:
 
 This project demonstrates how AI-assisted development can accelerate learning of cloud platforms and modern web technologies, especially for infrastructure-focused practitioners transitioning to full-stack development.
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support & Resources
+## Support & Resources
 
 ### Documentation & Help
 - **Azure Documentation**: [Azure App Service](https://docs.microsoft.com/azure/app-service/), [Entra ID](https://docs.microsoft.com/azure/active-directory/)
@@ -559,4 +559,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**🎯 Built for Azure learning • 🚀 Powered by AI assistance • 🔒 Enterprise-ready security**
