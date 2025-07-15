@@ -1,0 +1,141 @@
+@model ArkhamChangeRequest.Models.ChangeRequest
+@inject ArkhamChangeRequest.Services.IUserService UserService
+
+@{
+    ViewData["Title"] = "New IT Change Request";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var isAuthenticated = UserService.IsAuthenticated();
+}
+
+<div class="change-request-container">
+    <div class="form-container">
+        <h3 class="form-title">New IT Change Request</h3>
+        
+        <form asp-action="Create" method="post" enctype="multipart/form-data" class="change-request-form">
+            @Html.AntiForgeryToken()
+            
+            <!-- Requestor Information -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label asp-for="RequestorName" class="form-label">Requestor Name</label>
+                    <input asp-for="RequestorName" class="form-control" placeholder="Enter your full name" 
+                           readonly="@isAuthenticated" />
+                    <span asp-validation-for="RequestorName" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="RequestorEmail" class="form-label">Requestor Email</label>
+                    <div class="email-input-container">
+                        <input asp-for="RequestorEmail" class="form-control" type="email" placeholder="Enter your email address" 
+                               id="emailInput" readonly="@isAuthenticated" />
+                        <div class="email-validation-feedback" id="emailFeedback"></div>
+                    </div>
+                    <span asp-validation-for="RequestorEmail" class="text-danger"></span>
+                </div>
+            </div>
+
+            <!-- Change Information -->
+            <div class="form-group">
+                <label asp-for="ChangeTitle" class="form-label">Change Title</label>
+                <input asp-for="ChangeTitle" class="form-control" placeholder="e.g., Update Domain Certificates on IIS" />
+                <span asp-validation-for="ChangeTitle" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ChangeDescription" class="form-label">Change Description</label>
+                <textarea asp-for="ChangeDescription" class="form-control textarea-large" rows="5" placeholder="Provide a detailed description of the change..."></textarea>
+                <span asp-validation-for="ChangeDescription" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="AuthorizationServiceAffected" class="form-label">Authorization/Service Affected</label>
+                <textarea asp-for="AuthorizationServiceAffected" class="form-control" rows="3" placeholder="List affected services or systems..."></textarea>
+            </div>
+
+            <!-- Implementation Details -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label asp-for="ProposedImplementationDate" class="form-label">Proposed Implementation Date</label>
+                    <input asp-for="ProposedImplementationDate" type="datetime-local" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="ChangeType" class="form-label">Change Type</label>
+                    <select asp-for="ChangeType" class="form-control">
+                        <option value="">Select change type</option>
+                        <option value="Normal">Normal</option>
+                        <option value="Emergency">Emergency</option>
+                        <option value="Standard">Standard</option>
+                        <option value="Major">Major</option>
+                    </select>
+                    <span asp-validation-for="ChangeType" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Priority" class="form-label">Priority</label>
+                    <select asp-for="Priority" class="form-control">
+                        <option value="">Select priority</option>
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                        <option value="Critical">Critical</option>
+                    </select>
+                    <span asp-validation-for="Priority" class="text-danger"></span>
+                </div>
+            </div>
+
+            <!-- Risk Assessment -->
+            <div class="form-group">
+                <label asp-for="RiskAssessment" class="form-label">Risk Assessment</label>
+                <textarea asp-for="RiskAssessment" class="form-control textarea-large" rows="5" placeholder="Describe potential risks and mitigation strategies..."></textarea>
+                <span asp-validation-for="RiskAssessment" class="text-danger"></span>
+            </div>
+
+            <!-- Backout Plan -->
+            <div class="form-group">
+                <label asp-for="BackoutPlan" class="form-label">Backout Plan</label>
+                <textarea asp-for="BackoutPlan" class="form-control textarea-large" rows="5" placeholder="Describe the rollback procedure if the change fails..."></textarea>
+            </div>
+
+            <!-- File Upload -->
+            <div class="form-group">
+                <label class="form-label">Attachments</label>
+                <div class="file-upload-area" id="fileUploadArea">
+                    <div class="file-upload-content">
+                        <i class="upload-icon">📁</i>
+                        <p>Upload a file or drag and drop</p>
+                        <small>PNG, JPG, PDF up to 10MB</small>
+                    </div>
+                    <input type="file" name="Attachments" multiple accept=".png,.jpg,.jpeg,.pdf,.doc,.docx" class="file-input" id="fileInput" />
+                </div>
+                <div id="fileList" class="file-list"></div>
+            </div>
+
+            <!-- Approval Section (for display only in create form) -->
+            <div class="approval-section">
+                <h4 class="section-title">Approval Information</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Approver Name</label>
+                        <input type="text" class="form-control" readonly placeholder="To be completed by approver" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Approver Email</label>
+                        <input type="email" class="form-control" readonly placeholder="To be completed by approver" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Approval Date</label>
+                        <input type="text" class="form-control" readonly placeholder="To be completed by approver" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Submit Request</button>
+                <button type="button" class="btn btn-secondary" onclick="window.history.back()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/change-request.js" asp-append-version="true"></script>
+}

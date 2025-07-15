@@ -1,0 +1,130 @@
+/* User login area styles */
+.navbar-user {
+    margin-left: auto;
+    padding: 0 15px;
+}
+
+.user-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.user-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 15px;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.user-trigger:hover {
+    background-color: rgba(74, 144, 226, 0.1);
+}
+
+.user-display-name {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.dropdown-arrow {
+    font-size: 10px;
+    color: var(--text-secondary);
+    transition: transform 0.2s ease;
+}
+
+.user-dropdown:hover .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.user-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 220px;
+    background-color: var(--tertiary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 5px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+/* Keep dropdown open when hovering over trigger OR dropdown itself */
+.user-dropdown:hover .user-dropdown-menu,
+.user-dropdown:focus-within .user-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Touch-friendly improvements for mobile */
+@media (hover: none) and (pointer: coarse) {
+    .user-trigger {
+        padding: 12px 20px;
+    }
+    
+    .user-dropdown-menu {
+        position: fixed;
+        top: 70px;
+        right: 10px;
+        width: calc(100vw - 20px);
+        max-width: 300px;
+    }
+    
+    .sign-out-link {
+        padding: 15px 20px;
+        font-size: 1rem;
+    }
+}
+
+.user-email-display {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    padding: 5px 0;
+    word-break: break-word;
+}
+
+.dropdown-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 10px 0;
+}
+
+.sign-out-link {
+    display: block;
+    color: var(--text-primary);
+    text-decoration: none;
+    padding: 10px 15px;
+    background-color: var(--accent-color);
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.sign-out-link:hover {
+    background-color: var(--accent-hover);
+    text-decoration: none;
+    color: white;
+}
+
+.nav-link.text-dark {
+    color: var(--text-primary);
+    padding: 8px 15px;
+    background-color: var(--accent-color);
+    border-radius: 5px;
+    margin-left: 10px;
+}
+
+.nav-link.text-dark:hover {
+    background-color: var(--accent-hover);
+}

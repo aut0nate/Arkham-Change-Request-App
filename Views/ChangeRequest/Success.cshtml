@@ -1,0 +1,26 @@
+@{
+    ViewData["Title"] = "Request Submitted";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="success-container">
+    <div class="success-content">
+        <div class="success-icon">✅</div>
+        <h2>Change Request Submitted Successfully!</h2>
+        @if (ViewBag.ChangeRequestId != null)
+        {
+            <p><strong>Request ID: #@ViewBag.ChangeRequestId</strong></p>
+        }
+        <p>Your IT change request has been submitted and is now being reviewed by the change management team.</p>
+        <p>You will receive email notifications about the status of your request.</p>
+        
+        <div class="success-actions">
+            <a asp-action="Create" class="btn btn-primary">Submit Another Request</a>
+            @if (ViewBag.ChangeRequestId != null)
+            {
+                <a asp-action="Details" asp-route-id="@ViewBag.ChangeRequestId" class="btn btn-secondary">View Request</a>
+            }
+            <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Return to Home</a>
+        </div>
+    </div>
+</div>

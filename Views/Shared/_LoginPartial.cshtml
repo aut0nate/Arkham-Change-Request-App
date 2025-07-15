@@ -1,0 +1,21 @@
+@using ArkhamChangeRequest.Services
+@inject IUserService UserService
+
+@if (UserService.IsAuthenticated())
+{
+    <div class="user-dropdown">
+        <div class="user-trigger">
+            <span class="user-display-name">@UserService.GetUserName()</span>
+            <span class="dropdown-arrow">▼</span>
+        </div>
+        <div class="user-dropdown-menu">
+            <div class="user-email-display">@UserService.GetUserEmail()</div>
+            <hr class="dropdown-divider">
+            <a href="/.auth/logout" class="sign-out-link">Sign out</a>
+        </div>
+    </div>
+}
+else
+{
+    <a class="nav-link text-dark" href="/.auth/login/aad">Sign in</a>
+}

@@ -1,0 +1,302 @@
+@model IEnumerable<ArkhamChangeRequest.Models.ChangeRequestAudit>
+@{
+    ViewData["Title"] = "Audit Trail";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var changeRequest = ViewBag.ChangeRequest as ArkhamChangeRequest.Models.ChangeRequest;
+}
+
+<div class="change-request-container">
+    <div class="form-container">
+        <h3 class="form-title">Audit Trail - Change Request #@changeRequest?.Id</h3>
+        
+        <!-- Change Request Summary -->
+        <div class="request-summary">
+            <h4>Change Request Details</h4>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <label>Title:</label>
+                    <span>@changeRequest?.ChangeTitle</span>
+                </div>
+                <div class="summary-item">
+                    <label>Requestor:</label>
+                    <span>@changeRequest?.RequestorName</span>
+                </div>
+                <div class="summary-item">
+                    <label>Current Status:</label>
+                    <span class="status-badge status-@changeRequest?.Status.ToString().ToLower()">@changeRequest?.Status</span>
+                </div>
+                <div class="summary-item">
+                    <label>Created:</label>
+                    <span>@changeRequest?.CreatedDate.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Trail -->
+        <div class="audit-section">
+            <h4 class="section-title">Change History</h4>
+            
+            @if (Model?.Any() == true)
+            {
+                <div class="audit-timeline">
+                    @foreach (var audit in Model)
+                    {
+                        <div class="audit-entry">
+                            <div class="audit-marker">
+                                <div class="audit-dot audit-@audit.Action.ToLower().Replace(" ", "-")"></div>
+                            </div>
+                            <div class="audit-content">
+                                <div class="audit-header">
+                                    <h5 class="audit-action">@audit.Action</h5>
+                                    <span class="audit-date">@audit.ModifiedDate.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                                
+                                @if (!string.IsNullOrEmpty(audit.OldStatus) || !string.IsNullOrEmpty(audit.NewStatus))
+                                {
+                                    <div class="audit-status-change">
+                                        @if (!string.IsNullOrEmpty(audit.OldStatus))
+                                        {
+                                            <span class="status-from">@audit.OldStatus</span>
+                                            <i class="fas fa-arrow-right"></i>
+                                        }
+                                        @if (!string.IsNullOrEmpty(audit.NewStatus))
+                                        {
+                                            <span class="status-to">@audit.NewStatus</span>
+                                        }
+                                    </div>
+                                }
+                                
+                                <div class="audit-details">
+                                    @if (!string.IsNullOrEmpty(audit.ModifiedBy))
+                                    {
+                                        <span class="audit-user">
+                                            <i class="fas fa-user"></i> @audit.ModifiedBy
+                                        </span>
+                                    }
+                                </div>
+                                
+                                @if (!string.IsNullOrEmpty(audit.Comments))
+                                {
+                                    <div class="audit-comments">
+                                        <i class="fas fa-comment"></i>
+                                        <span>@audit.Comments</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="no-audit-data">
+                    <p>No audit trail data available for this change request.</p>
+                </div>
+            }
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-actions">
+            <a asp-action="Details" asp-route-id="@changeRequest?.Id" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Back to Details
+            </a>
+            <a asp-action="MyRequests" class="btn btn-secondary">
+                <i class="fas fa-list"></i> My Requests
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.request-summary {
+    background: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.summary-item label {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
+
+.summary-item span {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: fit-content;
+}
+
+.status-new { background-color: #e3f2fd; color: #1976d2; }
+.status-approved { background-color: #e8f5e8; color: #2e7d32; }
+.status-complete { background-color: #f3e5f5; color: #7b1fa2; }
+.status-cancelled { background-color: #ffebee; color: #c62828; }
+
+.audit-section {
+    background: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.audit-timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.audit-timeline::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 20px;
+    bottom: 0;
+    width: 2px;
+    background: var(--border-color);
+}
+
+.audit-entry {
+    position: relative;
+    margin-bottom: 25px;
+}
+
+.audit-entry:last-child {
+    margin-bottom: 0;
+}
+
+.audit-marker {
+    position: absolute;
+    left: -18px;
+    top: 5px;
+}
+
+.audit-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--card-bg-color);
+}
+
+.audit-created { background-color: #2196f3; }
+.audit-updated { background-color: #ff9800; }
+.audit-status-changed { background-color: #9c27b0; }
+.audit-approved { background-color: #4caf50; }
+
+.audit-content {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.audit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.audit-action {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.audit-date {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.audit-status-change {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+.status-from, .status-to {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-from {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.status-to {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+}
+
+.audit-details {
+    margin-bottom: 8px;
+}
+
+.audit-user {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.audit-user i {
+    margin-right: 5px;
+    color: var(--primary-color);
+}
+
+.audit-comments {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: var(--card-bg-color);
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.audit-comments i {
+    color: var(--primary-color);
+    margin-top: 2px;
+}
+
+.audit-comments span {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.no-audit-data {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+</style>

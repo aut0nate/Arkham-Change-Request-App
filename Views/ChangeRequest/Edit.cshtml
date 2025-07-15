@@ -1,0 +1,151 @@
+@model ArkhamChangeRequest.Models.ChangeRequest
+
+@{
+    ViewData["Title"] = "Edit Change Request";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="change-request-container">
+    <div class="form-container">
+        <div class="edit-header">
+            <h3 class="form-title">Edit Change Request #@Model.Id</h3>
+            <div class="edit-info">
+                <span class="edit-status">Status: <strong>@Model.Status</strong></span>
+                <span class="edit-date">Created: @Model.CreatedDate.ToString("MMM dd, yyyy 'at' HH:mm")</span>
+            </div>
+        </div>
+        
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+        }
+        
+        <form asp-action="Edit" method="post" enctype="multipart/form-data" class="change-request-form">
+            @Html.AntiForgeryToken()
+            <input asp-for="Id" type="hidden" />
+            
+            <!-- Requestor Information -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label asp-for="RequestorName" class="form-label">Requestor Name</label>
+                    <input asp-for="RequestorName" class="form-control" placeholder="Enter your full name" />
+                    <span asp-validation-for="RequestorName" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="RequestorEmail" class="form-label">Requestor Email</label>
+                    <div class="email-input-container">
+                        <input asp-for="RequestorEmail" class="form-control" type="email" placeholder="Enter your email address" id="emailInput" />
+                        <div class="email-validation-feedback" id="emailFeedback"></div>
+                    </div>
+                    <span asp-validation-for="RequestorEmail" class="text-danger"></span>
+                </div>
+            </div>
+
+            <!-- Change Details -->
+            <div class="form-group">
+                <label asp-for="ChangeTitle" class="form-label">Change Title</label>
+                <input asp-for="ChangeTitle" class="form-control" placeholder="Provide a brief, descriptive title for the change" />
+                <span asp-validation-for="ChangeTitle" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ChangeDescription" class="form-label">Change Description</label>
+                <textarea asp-for="ChangeDescription" class="form-control" rows="4" placeholder="Provide a detailed description of the change"></textarea>
+                <span asp-validation-for="ChangeDescription" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="AuthorizationServiceAffected" class="form-label">Authorization/Service Affected</label>
+                <textarea asp-for="AuthorizationServiceAffected" class="form-control" rows="3" placeholder="Describe what systems, services, or authorizations will be affected"></textarea>
+                <span asp-validation-for="AuthorizationServiceAffected" class="text-danger"></span>
+            </div>
+
+            <!-- Change Classification -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label asp-for="ChangeType" class="form-label">Change Type</label>
+                    <select asp-for="ChangeType" class="form-control" asp-items="Html.GetEnumSelectList<ArkhamChangeRequest.Models.ChangeType>()">
+                        <option value="">Select change type</option>
+                    </select>
+                    <span asp-validation-for="ChangeType" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Priority" class="form-label">Priority</label>
+                    <select asp-for="Priority" class="form-control" asp-items="Html.GetEnumSelectList<ArkhamChangeRequest.Models.Priority>()">
+                        <option value="">Select priority level</option>
+                    </select>
+                    <span asp-validation-for="Priority" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ProposedImplementationDate" class="form-label">Proposed Implementation Date</label>
+                <input asp-for="ProposedImplementationDate" class="form-control" type="datetime-local" />
+                <span asp-validation-for="ProposedImplementationDate" class="text-danger"></span>
+            </div>
+
+            <!-- Risk Assessment -->
+            <div class="form-group">
+                <label asp-for="RiskAssessment" class="form-label">Risk Assessment</label>
+                <textarea asp-for="RiskAssessment" class="form-control" rows="4" placeholder="Describe potential risks and their impact"></textarea>
+                <span asp-validation-for="RiskAssessment" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="BackoutPlan" class="form-label">Backout Plan</label>
+                <textarea asp-for="BackoutPlan" class="form-control" rows="3" placeholder="Describe how to revert this change if issues occur"></textarea>
+                <span asp-validation-for="BackoutPlan" class="text-danger"></span>
+            </div>
+
+            <!-- Existing Attachments -->
+            @if (Model.AttachmentFiles?.Any() == true)
+            {
+                <div class="form-group">
+                    <label class="form-label">Current Attachments</label>
+                    <div class="existing-attachments">
+                        @foreach (var attachment in Model.AttachmentFiles)
+                        {
+                            <div class="attachment-item">
+                                <div class="attachment-info">
+                                    <span class="attachment-name">📎 @attachment.FileName</span>
+                                    <span class="attachment-size">@((attachment.FileSize / 1024.0 / 1024.0).ToString("F2")) MB</span>
+                                    <span class="attachment-date">@attachment.UploadedDate.ToString("MMM dd, yyyy")</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Add New Attachments -->
+            <div class="form-group">
+                <label asp-for="Attachments" class="form-label">Add New Attachments <span class="optional">(Optional)</span></label>
+                <input asp-for="Attachments" class="form-control" type="file" multiple accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.png,.jpg,.jpeg" />
+                <div class="file-help-text">
+                    You can upload multiple files. Supported formats: PDF, Word, Excel, Text, Images. Max 10MB per file.
+                </div>
+                <span asp-validation-for="Attachments" class="text-danger"></span>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="btn-icon">💾</i>
+                    Update Request
+                </button>
+                <a href="@Url.Action("MyRequests", "ChangeRequest")" class="btn btn-secondary">
+                    <i class="btn-icon">❌</i>
+                    Cancel
+                </a>
+                <a href="@Url.Action("Details", "ChangeRequest", new { id = Model.Id })" class="btn btn-outline">
+                    <i class="btn-icon">👁️</i>
+                    View Details
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/change-request.js"></script>
+}

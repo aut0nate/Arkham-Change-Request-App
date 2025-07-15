@@ -1,0 +1,204 @@
+@{
+    ViewData["Title"] = "Update Status";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var changeRequest = ViewBag.ChangeRequest as ArkhamChangeRequest.Models.ChangeRequest;
+    var availableStatuses = ViewBag.AvailableStatuses as List<ArkhamChangeRequest.Models.ChangeRequestStatus>;
+}
+
+<div class="change-request-container">
+    <div class="form-container">
+        <h3 class="form-title">Update Status - Change Request #@changeRequest?.Id</h3>
+        
+        @if (ViewData.ModelState.ErrorCount > 0)
+        {
+            <div class="alert alert-danger">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <p>@error.ErrorMessage</p>
+                }
+            </div>
+        }
+
+        <!-- Change Request Summary -->
+        <div class="request-summary">
+            <h4>Change Request Details</h4>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <label>Title:</label>
+                    <span>@changeRequest?.ChangeTitle</span>
+                </div>
+                <div class="summary-item">
+                    <label>Requestor:</label>
+                    <span>@changeRequest?.RequestorName</span>
+                </div>
+                <div class="summary-item">
+                    <label>Current Status:</label>
+                    <span class="status-badge status-@changeRequest?.Status.ToString().ToLower()">@changeRequest?.Status</span>
+                </div>
+                <div class="summary-item">
+                    <label>Priority:</label>
+                    <span>@changeRequest?.Priority</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Update Form -->
+        <form asp-action="UpdateStatus" method="post" class="status-form">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@changeRequest?.Id" />
+            
+            <div class="status-section">
+                <h4 class="section-title">Status Update</h4>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newStatus" class="form-label required">New Status</label>
+                        <select name="newStatus" id="newStatus" class="form-control" required>
+                            <option value="">Select new status</option>
+                            @if (availableStatuses != null)
+                            {
+                                @foreach (var status in availableStatuses)
+                                {
+                                    <option value="@status">@status</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modifiedBy" class="form-label required">Modified By</label>
+                        <input type="text" name="modifiedBy" id="modifiedBy" class="form-control" 
+                               placeholder="Enter your name or email" required />
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="comments" class="form-label">Comments</label>
+                    <textarea name="comments" id="comments" class="form-control" rows="4" 
+                              placeholder="Optional: Add comments about this status change..."></textarea>
+                </div>
+                
+                <div class="status-info">
+                    <h5>Status Definitions:</h5>
+                    <ul>
+                        <li><strong>New:</strong> Change request has been submitted and awaiting approval</li>
+                        <li><strong>Approved:</strong> Change has been approved and ready for implementation</li>
+                        <li><strong>Complete:</strong> Change has been successfully implemented</li>
+                        <li><strong>Cancelled:</strong> Change request has been cancelled or rejected</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Update Status
+                </button>
+                <a asp-action="Details" asp-route-id="@changeRequest?.Id" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Details
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.request-summary {
+    background: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.summary-item label {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
+
+.summary-item span {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: fit-content;
+}
+
+.status-new {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-approved {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+}
+
+.status-complete {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.status-cancelled {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.status-section {
+    background: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.status-info {
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.status-info h5 {
+    margin: 0 0 10px 0;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.status-info ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.status-info li {
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.status-info strong {
+    color: var(--text-color);
+}
+</style>

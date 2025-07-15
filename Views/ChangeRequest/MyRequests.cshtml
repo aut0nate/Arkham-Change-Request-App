@@ -1,0 +1,124 @@
+@model IEnumerable<ArkhamChangeRequest.Models.ChangeRequest>
+
+@{
+    ViewData["Title"] = "My Change Requests";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="change-request-container">
+    <div class="form-container">
+        <h3 class="form-title">My Change Requests</h3>
+        
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+        }
+        
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+        }
+        
+        @if (!Model.Any())
+        {
+            <div class="no-requests">
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <h4>No Change Requests Found</h4>
+                    <p>You haven't submitted any change requests yet.</p>
+                    <a href="@Url.Action("Create", "ChangeRequest")" class="btn btn-primary">
+                        <i class="btn-icon">➕</i>
+                        Create Your First Request
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="requests-summary">
+                <p class="summary-text">
+                    <strong>@Model.Count()</strong> change request@(Model.Count() == 1 ? "" : "s") found
+                </p>
+                <a href="@Url.Action("Create", "ChangeRequest")" class="btn btn-primary btn-sm">
+                    <i class="btn-icon">➕</i>
+                    New Request
+                </a>
+            </div>
+            
+            <div class="requests-list">
+                @foreach (var request in Model.OrderByDescending(r => r.CreatedDate))
+                {
+                    <div class="request-card">
+                        <div class="request-header">
+                            <div class="request-id">
+                                <strong>CR-@request.Id.ToString("D4")</strong>
+                                <span class="status-badge status-@request.Status.ToString().ToLower().Replace(" ", "-")">
+                                    @request.Status
+                                </span>
+                            </div>
+                            <div class="request-date">
+                                @request.CreatedDate.ToString("MMM dd, yyyy 'at' HH:mm")
+                            </div>
+                        </div>
+                        
+                        <div class="request-content">
+                            <h4 class="request-title">@request.ChangeTitle</h4>
+                            <p class="request-description">
+                                @if (request.ChangeDescription.Length > 150)
+                                {
+                                    @(request.ChangeDescription.Substring(0, 150) + "...")
+                                }
+                                else
+                                {
+                                    @request.ChangeDescription
+                                }
+                            </p>
+                            
+                            <div class="request-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">Priority:</span>
+                                    <span class="priority-badge priority-@request.Priority.ToString().ToLower()">
+                                        @request.Priority
+                                    </span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Type:</span>
+                                    <span class="detail-value">@request.ChangeType</span>
+                                </div>
+                                @if (request.ProposedImplementationDate.HasValue)
+                                {
+                                    <div class="detail-item">
+                                        <span class="detail-label">Proposed Date:</span>
+                                        <span class="detail-value">@request.ProposedImplementationDate.Value.ToString("MMM dd, yyyy")</span>
+                                    </div>
+                                }
+                            </div>
+                            
+                            @if (request.AttachmentFiles?.Any() == true)
+                            {
+                                <div class="attachments-info">
+                                    <i class="attachment-icon">📎</i>
+                                    <span>@request.AttachmentFiles.Count attachment@(request.AttachmentFiles.Count == 1 ? "" : "s")</span>
+                                </div>
+                            }
+                        </div>
+                        
+                        <div class="request-actions">
+                            <a href="@Url.Action("Details", "ChangeRequest", new { id = request.Id })" class="btn btn-outline">
+                                <i class="btn-icon">👁️</i>
+                                View Details
+                            </a>
+                            @if (request.Status == ArkhamChangeRequest.Models.ChangeRequestStatus.New)
+                            {
+                                <a href="@Url.Action("Edit", "ChangeRequest", new { id = request.Id })" class="btn btn-primary btn-sm">
+                                    <i class="btn-icon">✏️</i>
+                                    Edit
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <title>@ViewData["Title"] - Arkham IT Change Management</title>
+    <link rel="stylesheet" href="~/css/arkham-styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/login-styles.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-brand">
+            <img src="~/images/arkham-logo.png" alt="Arkham IT Logo" class="brand-logo" />
+            <div class="brand-text">
+                <h2>ARKHAM IT</h2>
+                <p>Change Management Portal</p>
+            </div>
+        </div>
+        <div class="navbar-right">
+            <nav class="navbar-nav">
+                <a href="@Url.Action("Create", "ChangeRequest")" class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" ? "active" : "")">
+                    <i class="nav-icon">🏠</i>
+                    Home
+                </a>
+                <a href="@Url.Action("MyRequests", "ChangeRequest")" class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "MyRequests" ? "active" : "")">
+                    <i class="nav-icon">📋</i>
+                    My Requests
+                </a>
+            </nav>
+            <div class="navbar-user">
+                <partial name="_LoginPartial" />
+            </div>
+        </div>
+    </div>
+    
+    <main class="main-content">
+        @RenderBody()
+    </main>
+    
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
