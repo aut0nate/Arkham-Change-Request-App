@@ -1,8 +1,8 @@
 # Arkham Change Management Application
 
-A change management application for a fictitious company named Arkham. Built with .NET and featuring Azure Entra ID authentication, mobile-responsive design, and secure cloud hosting on Microsoft Azure.
+A change management application for a fictitious company named Arkham. Built with .NET, Auth0 enterprise SAML federation (backed by Azure Entra ID), mobile-responsive design, and secure cloud hosting on Microsoft Azure.
 
-> **Note**: This application was developed as a learning project focused on Azure services integration, deployment, and management rather than web development. It was built with significant assistance from **GitHub Copilot** and **Claude Sonnet 4**, demonstrating how AI tools can accelerate Azure-focused learning and development.
+> **Note**: This application was developed as a learning project focused on Azure services integration, deployment, and management rather than web development. It was built with significant assistance from **OpenAI Codex**, demonstrating how AI tooling can accelerate Azure-focused learning and development.
 
 ## Project Purpose
 
@@ -16,14 +16,14 @@ The focus is on **Azure cloud architecture and DevOps practices** rather than cu
 
 ## Features
 
-- **Enterprise Authentication**: Azure Entra ID integration with Easy Auth for secure employee access
+- **Enterprise Authentication**: Auth0 enterprise SAML → Azure Entra ID integration with fine-grained group checks and claims mapping
 - **Professional UI**: Dark-themed interface matching enterprise standards with mobile-responsive design
-- **Comprehensive Forms**: Full change request lifecycle with validation and file attachments
+- **Comprehensive Workflow**: Change submission, auto-prefilled requestor data, attachments, approvals dashboard, status updates, and audit trail
 - **File Management**: Secure file upload via Azure Blob Storage (PDF, DOC, DOCX, images)
 - **Persistent Storage**: Azure SQL Database with Entity Framework Core
 - **Mobile Optimized**: Touch-friendly interface for iPhone and mobile devices
-- **Real-time Validation**: Form validation with user-friendly error handling
-- **Security First**: Azure Key Vault integration, HTTPS enforcement, anti-forgery protection
+- **Real-time Validation**: Form validation with user-friendly error handling and future-dated scheduling guardrails
+- **Security First**: Azure Key Vault integration, HTTPS enforcement, anti-forgery protection, and Auth0 group-based authorization
 - **Monitoring**: Application Insights integration for telemetry and diagnostics
 
 ## Architecture
@@ -61,7 +61,7 @@ The focus is on **Azure cloud architecture and DevOps practices** rather than cu
 
 3. **Configure local settings**
    
-   Update `appsettings.json` with your local configuration:
+   Copy `.env.example` to `.env` and update the values for Auth0, Azure, and SQL secrets. Populate `appsettings.json` / `appsettings.Development.json` with non-sensitive defaults (these files are ignored by Git so you can store local secrets safely):
    ```json
    {
      "ConnectionStrings": {
@@ -259,19 +259,21 @@ dotnet ef database update --connection "$SQL_CONNECTION"
 4. **Monitor Logs**: Use `az webapp log tail` for real-time monitoring
 
 ### Environment Variables Reference
-Copy `.env.example` to `.env` and update with your values:
+Copy `.env.example` to `.env` and update with your values (never commit this file):
 ```bash
 AZURE_AD_TENANT_ID=your-tenant-id
-AZURE_AD_CLIENT_ID=your-client-id
+AUTH0_DOMAIN=arkham.uk.auth0.com
+AUTH0_CLIENT_ID=your-auth0-client-id
+AUTH0_CLIENT_SECRET=your-auth0-client-secret
 RESOURCE_GROUP=arkham-change-request-rg
 APP_SERVICE_NAME=arkham-change-request-app
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
-The application uses the following configuration structure:
+The application uses the following configuration structure (mirrored between `appsettings.json`, `appsettings.Development.json`, and secure values injected via `.env` or Azure App Service configuration):
 
 ```json
 {
@@ -298,7 +300,7 @@ The application uses the following configuration structure:
 
 Sensitive configuration values are stored in Azure Key Vault:
 - Database connection strings
-- Storage account keys  
+- Storage account keys
 - Application secrets
 
 ## Mobile Responsive Design
@@ -313,7 +315,7 @@ The application features comprehensive mobile optimization:
 
 ### Supported Breakpoints
 - **Desktop**: 1200px and above
-- **Tablet**: 768px - 1199px  
+- **Tablet**: 768px - 1199px
 - **Mobile**: 480px - 767px
 - **Small Mobile**: Under 480px
 - **Landscape**: Orientation-specific optimizations
@@ -331,10 +333,10 @@ The application supports secure file uploads with the following specifications:
 
 ### Authentication Flow
 1. User accesses application
-2. Redirected to Azure Entra ID login
-3. Easy Auth handles authentication tokens
-4. User profile claims extracted and displayed
-5. Session managed by Azure App Service
+2. Redirected to Auth0 hosted login (enterprise SAML handshake with Azure Entra ID / Microsoft login)
+3. Auth0 returns ID/Access tokens to ASP.NET Core
+4. Claims are enriched (groups, display name) and requestor / approver details auto-populate forms
+5. Session managed with ASP.NET Core cookies; logout triggers Auth0 + Microsoft sign-out
 
 ### Data Protection
 - **In Transit**: HTTPS enforcement with TLS 1.2+
@@ -348,8 +350,8 @@ The application supports secure file uploads with the following specifications:
 
 #### ChangeRequest
 - **Id**: Primary key (int, identity)
-- **RequestorName**: User's full name from Entra ID
-- **RequestorEmail**: User's email from Entra ID  
+- **RequestorName**: User's full name resolved from Auth0 / Entra ID claims
+- **RequestorEmail**: User's email from Auth0 / Entra ID
 - **ChangeTitle**: Brief description of the change
 - **ChangeDescription**: Detailed change description
 - **AuthorizationServiceAffected**: Services impacted
@@ -359,7 +361,7 @@ The application supports secure file uploads with the following specifications:
 - **RiskAssessment**: Risk analysis description
 - **BackoutPlan**: Rollback procedure
 - **CreatedDate**: Automatic timestamp
-- **Status**: Current change status
+- **Status**: Current change status (New, Approved, Rejected, On-Hold, Complete, Abandoned)
 
 #### ChangeRequestAttachment
 - **Id**: Primary key (int, identity)
@@ -373,16 +375,22 @@ The application supports secure file uploads with the following specifications:
 ## API Endpoints
 
 ### Change Request Management
-- `GET /ChangeRequest/Create` - New change request form
+- `GET /ChangeRequest/Create` - New change request form (auto-fills requestor details)
 - `POST /ChangeRequest/Create` - Submit new change request
-- `GET /ChangeRequest/Details/{id}` - View change request details
-- `GET /ChangeRequest/MyRequests` - List user's change requests
-- `GET /ChangeRequest/Success` - Success confirmation page
+- `GET /ChangeRequest/Details/{id}` - View change request, attachments, and audit history
+- `GET /ChangeRequest/Edit/{id}` - Edit request (permitted while status is New)
+- `GET /ChangeRequest/MyRequests` - List user's submissions
+- `GET /ChangeRequest/Approvals` - Approver dashboard showing all pending work
+- `POST /ChangeRequest/Approve/{id}` - Approve a request (Change Approvers only)
+- `POST /ChangeRequest/Reject/{id}` - Reject with reason (Change Approvers only)
+- `GET /ChangeRequest/UpdateStatus/{id}` - Update Approved requests to Complete / On-Hold / Abandoned
+- `GET /ChangeRequest/AuditTrail/{id}` - View audit trail timeline
 
 ### Authentication
-- `GET /.auth/login/aad` - Initiate Entra ID login
-- `GET /.auth/logout` - Sign out user
-- `GET /.auth/me` - Current user information (Easy Auth endpoint)
+- `GET /Account/Login` - Initiate Auth0 / Entra ID login
+- `POST /Account/Logout` - Sign out user and end Auth0 session
+- `GET /Account/AccessDenied` - Friendly modal explaining missing group memberships
+- `GET /Account/SignedOut` - Confirmation page with re-login option
 
 ## Monitoring and Diagnostics
 
@@ -415,9 +423,10 @@ The application includes health check endpoints for:
 ## Troubleshooting Common Issues
 
 ### Authentication Problems
-- **"AADSTS50011: Redirect URI mismatch"**: Verify App Registration redirect URI exactly matches `https://your-app.azurewebsites.net/.auth/login/aad/callback`
-- **Email shows instead of full name**: Check Entra ID user profile has `givenName` and `surname` populated
-- **Authentication loop**: Clear browser cache, check tenant ID and client ID configuration
+- **"invalid_request: returnTo parameter..."**: Ensure Auth0 application's Allowed Logout URLs include `https://localhost:5246/Account/SignedOut` (or your deployed domain).
+- **Group-based Access Denied**: Confirm the user belongs to one of the configured Arkham groups. Use the Auth0 logs / Entra group membership to verify claim emission.
+- **Email shows instead of full name**: Ensure the SAML assertion includes `http://schemas.microsoft.com/identity/claims/displayname`, `given_name`, or `family_name`.
+- **Authentication loop**: Clear browser cache, verify Auth0 domain, client ID/secret, and callback URL configured in `appsettings.*.json` / `.env`.
 
 ### Database Issues
 - **Connection timeout**: Verify SQL Server firewall allows Azure services (IP range 0.0.0.0-0.0.0.0)
@@ -468,8 +477,8 @@ This project welcomes contributions focused on Azure integration and deployment 
 This project demonstrates practical experience with:
 
 ### Azure Services Integration
-- **Azure Entra ID**: Enterprise authentication and identity management
-- **Azure App Service**: Web application hosting with Easy Auth
+- **Auth0 + Azure Entra ID**: Enterprise authentication, group claim evaluation, and SAML federation
+- **Azure App Service**: Web application hosting with managed identity and deployment slots
 - **Azure SQL Database**: Managed database with Entity Framework Core
 - **Azure Key Vault**: Secure secrets and configuration management
 - **Azure Blob Storage**: File upload and storage solutions
@@ -503,6 +512,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Issues**: GitHub Issues for bugs and feature requests
 - **Discussions**: GitHub Discussions for questions and ideas
 - **Azure Support**: Azure Portal support for infrastructure issues
-
----
-
