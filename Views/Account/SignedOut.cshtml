@@ -1,0 +1,21 @@
+@{
+    ViewData["Title"] = "Signed out";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var loginUrl = ViewBag.LoginUrl as string ?? Url.Action("Login", "Account", new { forceNewSession = true });
+}
+
+<div class="signed-out-page">
+    <div class="signed-out-blur"></div>
+    <div class="signed-out-card">
+        <div class="signed-out-logo">
+            <img src="~/images/arkham-logo.png" alt="Arkham IT" />
+        </div>
+        <h2>You have been signed out</h2>
+        <p class="signed-out-message">
+            You successfully ended your session. To protect your account, the next sign-in will start a fresh session.
+        </p>
+        <div class="signed-out-actions">
+            <a class="btn btn-primary" href="@loginUrl">Sign in again</a>
+        </div>
+    </div>
+</div>

@@ -1,8 +1,11 @@
 @model ArkhamChangeRequest.Models.ChangeRequest
 
+@inject Microsoft.AspNetCore.Authorization.IAuthorizationService AuthorizationService
 @{
     ViewData["Title"] = "Edit Change Request";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var approverAuthorization = await AuthorizationService.AuthorizeAsync(User, null, "ChangeApproversOnly");
+    var isApprover = approverAuthorization.Succeeded;
 }
 
 <div class="change-request-container">
@@ -56,7 +59,11 @@
 
             <div class="form-group">
                 <label asp-for="AuthorizationServiceAffected" class="form-label">Authorization/Service Affected</label>
-                <textarea asp-for="AuthorizationServiceAffected" class="form-control" rows="3" placeholder="Describe what systems, services, or authorizations will be affected"></textarea>
+                <select asp-for="AuthorizationServiceAffected"
+                        class="form-control"
+                        asp-items="ViewBag.ServiceOptions">
+                    <option value="">Select a service</option>
+                </select>
                 <span asp-validation-for="AuthorizationServiceAffected" class="text-danger"></span>
             </div>
 
@@ -107,7 +114,7 @@
                         {
                             <div class="attachment-item">
                                 <div class="attachment-info">
-                                    <span class="attachment-name">📎 @attachment.FileName</span>
+                                    <span class="attachment-name">@attachment.FileName</span>
                                     <span class="attachment-size">@((attachment.FileSize / 1024.0 / 1024.0).ToString("F2")) MB</span>
                                     <span class="attachment-date">@attachment.UploadedDate.ToString("MMM dd, yyyy")</span>
                                 </div>
@@ -130,15 +137,12 @@
             <!-- Form Actions -->
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">
-                    <i class="btn-icon">💾</i>
                     Update Request
                 </button>
                 <a href="@Url.Action("MyRequests", "ChangeRequest")" class="btn btn-secondary">
-                    <i class="btn-icon">❌</i>
                     Cancel
                 </a>
                 <a href="@Url.Action("Details", "ChangeRequest", new { id = Model.Id })" class="btn btn-outline">
-                    <i class="btn-icon">👁️</i>
                     View Details
                 </a>
             </div>

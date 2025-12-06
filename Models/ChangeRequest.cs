@@ -15,7 +15,7 @@ namespace ArkhamChangeRequest.Models
 
         [Required(ErrorMessage = "Email address is required")]
         [EmailAddress(ErrorMessage = "Please enter a valid email address")]
-        [RegularExpression(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", 
+        [RegularExpression(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
             ErrorMessage = "Please enter a valid email address (e.g., user@company.com)")]
         [Display(Name = "Requestor Email")]
         [StringLength(200)]
@@ -64,7 +64,7 @@ namespace ArkhamChangeRequest.Models
         public virtual ICollection<ChangeRequestAttachment> AttachmentFiles { get; set; } = new List<ChangeRequestAttachment>();
 
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
-        
+
         [Required]
         public ChangeRequestStatus Status { get; set; } = ChangeRequestStatus.New;
 
@@ -84,7 +84,7 @@ namespace ArkhamChangeRequest.Models
 
         // Audit Trail
         public DateTime? LastModifiedDate { get; set; }
-        
+
         [StringLength(100)]
         public string? LastModifiedBy { get; set; }
 
@@ -96,24 +96,24 @@ namespace ArkhamChangeRequest.Models
     {
         [Key]
         public int Id { get; set; }
-        
+
         public int ChangeRequestId { get; set; }
-        
+
         [Required]
         [StringLength(255)]
         public string FileName { get; set; } = string.Empty;
-        
+
         [Required]
         [StringLength(500)]
         public string BlobUrl { get; set; } = string.Empty;
-        
+
         [StringLength(100)]
         public string ContentType { get; set; } = string.Empty;
-        
+
         public long FileSize { get; set; }
-        
+
         public DateTime UploadedDate { get; set; } = DateTime.UtcNow;
-        
+
         // Foreign key
         [ForeignKey("ChangeRequestId")]
         public virtual ChangeRequest ChangeRequest { get; set; } = null!;
@@ -123,27 +123,27 @@ namespace ArkhamChangeRequest.Models
     {
         [Key]
         public int Id { get; set; }
-        
+
         public int ChangeRequestId { get; set; }
-        
+
         [Required]
         [StringLength(100)]
         public string Action { get; set; } = string.Empty;
-        
+
         [StringLength(20)]
         public string? OldStatus { get; set; }
-        
+
         [StringLength(20)]
         public string? NewStatus { get; set; }
-        
+
         [StringLength(100)]
         public string? ModifiedBy { get; set; }
-        
+
         public DateTime ModifiedDate { get; set; } = DateTime.UtcNow;
-        
+
         [StringLength(500)]
         public string? Comments { get; set; }
-        
+
         // Foreign key
         [ForeignKey("ChangeRequestId")]
         public virtual ChangeRequest ChangeRequest { get; set; } = null!;
@@ -153,7 +153,9 @@ namespace ArkhamChangeRequest.Models
     {
         New,
         Approved,
+        OnHold,
         Complete,
+        Abandoned,
         Cancelled
     }
 

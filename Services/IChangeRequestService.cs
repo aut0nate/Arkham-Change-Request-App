@@ -13,5 +13,6 @@ namespace ArkhamChangeRequest.Services
         Task<bool> UpdateApprovalAsync(int id, string approverName, string approverEmail, string? modifiedBy = null);
         Task<bool> DeleteChangeRequestAsync(int id);
         Task<IEnumerable<ChangeRequestAudit>> GetAuditTrailAsync(int changeRequestId);
+        Task<IEnumerable<ChangeRequest>> GetPendingApprovalsAsync();
     }
 }

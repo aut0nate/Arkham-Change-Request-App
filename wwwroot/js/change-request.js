@@ -22,9 +22,15 @@ function showEmailFeedback(isValid, message) {
 }
 
 // File upload functionality
+function formatLocalDateTime(date) {
+    const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return offsetDate.toISOString().slice(0, 16);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Email validation
     const emailInput = document.getElementById('emailInput');
+    const implementationInput = document.getElementById('ProposedImplementationDate');
     
     if (emailInput) {
         emailInput.addEventListener('input', function() {
@@ -49,6 +55,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 showEmailFeedback(false, '✗ Please enter a valid email address (e.g., user@company.com)');
             }
         });
+    }
+
+    if (implementationInput) {
+        const nowString = formatLocalDateTime(new Date());
+        implementationInput.setAttribute('min', nowString);
+
+        if (!implementationInput.value || new Date(implementationInput.value) < new Date()) {
+            implementationInput.value = nowString;
+        }
     }
 
     // File upload functionality

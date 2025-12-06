@@ -1,10 +1,13 @@
 @model ArkhamChangeRequest.Models.ChangeRequest
 @inject ArkhamChangeRequest.Services.IUserService UserService
 
+@inject Microsoft.AspNetCore.Authorization.IAuthorizationService AuthorizationService
 @{
     ViewData["Title"] = "New IT Change Request";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var isAuthenticated = UserService.IsAuthenticated();
+    var approverAuthorization = await AuthorizationService.AuthorizeAsync(User, null, "ChangeApproversOnly");
+    var isApprover = approverAuthorization.Succeeded;
 }
 
 <div class="change-request-container">
@@ -48,7 +51,12 @@
 
             <div class="form-group">
                 <label asp-for="AuthorizationServiceAffected" class="form-label">Authorization/Service Affected</label>
-                <textarea asp-for="AuthorizationServiceAffected" class="form-control" rows="3" placeholder="List affected services or systems..."></textarea>
+                <select asp-for="AuthorizationServiceAffected"
+                        class="form-control"
+                        asp-items="ViewBag.ServiceOptions">
+                    <option value="">Select a service</option>
+                </select>
+                <span asp-validation-for="AuthorizationServiceAffected" class="text-danger"></span>
             </div>
 
             <!-- Implementation Details -->
@@ -108,29 +116,9 @@
                 <div id="fileList" class="file-list"></div>
             </div>
 
-            <!-- Approval Section (for display only in create form) -->
-            <div class="approval-section">
-                <h4 class="section-title">Approval Information</h4>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Approver Name</label>
-                        <input type="text" class="form-control" readonly placeholder="To be completed by approver" />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Approver Email</label>
-                        <input type="email" class="form-control" readonly placeholder="To be completed by approver" />
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Approval Date</label>
-                        <input type="text" class="form-control" readonly placeholder="To be completed by approver" />
-                    </div>
-                </div>
-            </div>
-
             <!-- Submit Button -->
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Submit Request</button>
-                <button type="button" class="btn btn-secondary" onclick="window.history.back()">Cancel</button>
             </div>
         </form>
     </div>

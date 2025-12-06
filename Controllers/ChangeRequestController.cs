@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using ArkhamChangeRequest.Models;
 using ArkhamChangeRequest.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Configuration;
+using System.Linq;
 
 namespace ArkhamChangeRequest.Controllers
 {
@@ -10,15 +13,24 @@ namespace ArkhamChangeRequest.Controllers
         private readonly IChangeRequestService _changeRequestService;
         private readonly IUserService _userService;
         private readonly ILogger<ChangeRequestController> _logger;
+        private readonly IConfiguration _configuration;
+        private readonly IAuthorizationService _authorizationService;
+        private readonly IBlobStorageService _blobStorageService;
 
         public ChangeRequestController(
             IChangeRequestService changeRequestService,
             IUserService userService,
-            ILogger<ChangeRequestController> logger)
+            ILogger<ChangeRequestController> logger,
+            IConfiguration configuration,
+            IAuthorizationService authorizationService,
+            IBlobStorageService blobStorageService)
         {
             _changeRequestService = changeRequestService;
             _userService = userService;
             _logger = logger;
+            _configuration = configuration;
+            _authorizationService = authorizationService;
+            _blobStorageService = blobStorageService;
         }
 
         public async Task<IActionResult> Index()
@@ -36,6 +48,7 @@ namespace ArkhamChangeRequest.Controllers
                 RequestorEmail = _userService.GetUserEmail()
             };
             
+            ViewBag.ServiceOptions = GetServiceOptions();
             return View(model);
         }
 
@@ -66,6 +79,7 @@ namespace ArkhamChangeRequest.Controllers
                 }
             }
 
+            ViewBag.ServiceOptions = GetServiceOptions();
             return View(model);
         }
 
@@ -76,6 +90,17 @@ namespace ArkhamChangeRequest.Controllers
             {
                 return NotFound();
             }
+
+            var authorization = await _authorizationService.AuthorizeAsync(User, null, "ChangeApproversOnly");
+            var currentUserEmail = _userService.GetUserEmail();
+            var isOwner = !string.IsNullOrWhiteSpace(currentUserEmail) &&
+                          string.Equals(currentUserEmail, changeRequest.RequestorEmail, StringComparison.OrdinalIgnoreCase);
+
+            ViewBag.IsApprover = authorization.Succeeded;
+            ViewBag.IsRequestOwner = isOwner;
+            ViewBag.OwnerCanUpdateStatus = isOwner &&
+                (changeRequest.Status == ChangeRequestStatus.Approved ||
+                 changeRequest.Status == ChangeRequestStatus.OnHold);
 
             return View(changeRequest);
         }
@@ -94,6 +119,13 @@ namespace ArkhamChangeRequest.Controllers
             return View(changeRequests);
         }
 
+    [Authorize(Policy = "ChangeApproversOnly")]
+    public async Task<IActionResult> Approvals()
+    {
+            var allRequests = await _changeRequestService.GetAllChangeRequestsAsync();
+            return View(allRequests);
+    }
+
         public async Task<IActionResult> Edit(int id)
         {
             var changeRequest = await _changeRequestService.GetChangeRequestByIdAsync(id);
@@ -109,6 +141,7 @@ namespace ArkhamChangeRequest.Controllers
                 return RedirectToAction("MyRequests");
             }
 
+            ViewBag.ServiceOptions = GetServiceOptions();
             return View(changeRequest);
         }
 
@@ -162,10 +195,12 @@ namespace ArkhamChangeRequest.Controllers
                 }
             }
 
+            ViewBag.ServiceOptions = GetServiceOptions();
             return View(model);
         }
 
         [HttpGet]
+        [Authorize(Policy = "ChangeApproversOnly")]
         public async Task<IActionResult> Approve(int id)
         {
             var changeRequest = await _changeRequestService.GetChangeRequestByIdAsync(id);
@@ -181,19 +216,40 @@ namespace ArkhamChangeRequest.Controllers
             }
 
             ViewBag.ChangeRequest = changeRequest;
+            ViewBag.ApproverName = _userService.GetUserName();
+            ViewBag.ApproverEmail = _userService.GetUserEmail();
             return View();
         }
 
         [HttpPost]
+        [Authorize(Policy = "ChangeApproversOnly")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Approve(int id, string approverName, string approverEmail)
         {
+            if (_userService.IsAuthenticated())
+            {
+                var resolvedName = _userService.GetUserName();
+                var resolvedEmail = _userService.GetUserEmail();
+
+                if (!string.IsNullOrWhiteSpace(resolvedName))
+                {
+                    approverName = resolvedName;
+                }
+
+                if (!string.IsNullOrWhiteSpace(resolvedEmail))
+                {
+                    approverEmail = resolvedEmail;
+                }
+            }
+
             if (string.IsNullOrWhiteSpace(approverName) || string.IsNullOrWhiteSpace(approverEmail))
             {
                 ModelState.AddModelError("", "Approver name and email are required.");
                 
                 var changeRequest = await _changeRequestService.GetChangeRequestByIdAsync(id);
                 ViewBag.ChangeRequest = changeRequest;
+                ViewBag.ApproverName = _userService.GetUserName();
+                ViewBag.ApproverEmail = _userService.GetUserEmail();
                 return View();
             }
 
@@ -218,7 +274,56 @@ namespace ArkhamChangeRequest.Controllers
 
             var requestForView = await _changeRequestService.GetChangeRequestByIdAsync(id);
             ViewBag.ChangeRequest = requestForView;
+            ViewBag.ApproverName = _userService.GetUserName();
+            ViewBag.ApproverEmail = _userService.GetUserEmail();
             return View();
+        }
+
+        [HttpPost]
+        [Authorize(Policy = "ChangeApproversOnly")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Reject(int id, string rejectionReason)
+        {
+            var changeRequest = await _changeRequestService.GetChangeRequestByIdAsync(id);
+            if (changeRequest == null)
+            {
+                return NotFound();
+            }
+
+            if (changeRequest.Status != ChangeRequestStatus.New)
+            {
+                TempData["ErrorMessage"] = "Only change requests awaiting approval can be rejected.";
+                return RedirectToAction("Details", new { id });
+            }
+
+            if (string.IsNullOrWhiteSpace(rejectionReason))
+            {
+                TempData["ErrorMessage"] = "Please provide a rejection reason.";
+                return RedirectToAction("Approve", new { id });
+            }
+
+            var approverName = _userService.GetUserName();
+            var approverEmail = _userService.GetUserEmail();
+            var modifiedBy = !string.IsNullOrWhiteSpace(approverName)
+                ? approverName
+                : approverEmail ?? "Approver";
+
+            var success = await _changeRequestService.UpdateChangeRequestStatusAsync(
+                id,
+                ChangeRequestStatus.Cancelled,
+                modifiedBy,
+                rejectionReason.Trim());
+
+            if (success)
+            {
+                TempData["SuccessMessage"] = $"Change request #{id} was rejected.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "We couldn't reject this change request. Please try again.";
+            }
+
+            return RedirectToAction("Details", new { id });
         }
 
         [HttpGet]
@@ -230,8 +335,27 @@ namespace ArkhamChangeRequest.Controllers
                 return NotFound();
             }
 
+            if (changeRequest.Status == ChangeRequestStatus.New)
+            {
+                TempData["ErrorMessage"] = "Use the Review & Approve workflow to approve or reject new requests.";
+                return RedirectToAction("Details", new { id });
+            }
+
+            if (changeRequest.Status != ChangeRequestStatus.Approved &&
+                changeRequest.Status != ChangeRequestStatus.OnHold)
+            {
+                TempData["ErrorMessage"] = "Only approved or on-hold requests can be updated from this page.";
+                return RedirectToAction("Details", new { id });
+            }
+
+            var isApprover = (await _authorizationService.AuthorizeAsync(User, null, "ChangeApproversOnly")).Succeeded;
+            var currentUserEmail = _userService.GetUserEmail();
+            var isOwner = !string.IsNullOrWhiteSpace(currentUserEmail) &&
+                          string.Equals(currentUserEmail, changeRequest.RequestorEmail, StringComparison.OrdinalIgnoreCase);
+
             ViewBag.ChangeRequest = changeRequest;
-            ViewBag.AvailableStatuses = GetAvailableStatuses(changeRequest.Status);
+            ViewBag.AvailableStatuses = GetAvailableStatuses(changeRequest.Status, isApprover, isOwner);
+            ViewBag.ModifiedBy = _userService.GetUserName();
             return View();
         }
 
@@ -239,13 +363,50 @@ namespace ArkhamChangeRequest.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateStatus(int id, ChangeRequestStatus newStatus, string modifiedBy, string? comments)
         {
+            var changeRequest = await _changeRequestService.GetChangeRequestByIdAsync(id);
+            if (changeRequest == null)
+            {
+                return NotFound();
+            }
+
+            if (changeRequest.Status != ChangeRequestStatus.Approved &&
+                changeRequest.Status != ChangeRequestStatus.OnHold)
+            {
+                TempData["ErrorMessage"] = "This change request cannot be updated from its current state.";
+                return RedirectToAction("Details", new { id });
+            }
+
+            var isApprover = (await _authorizationService.AuthorizeAsync(User, null, "ChangeApproversOnly")).Succeeded;
+            var currentUserEmail = _userService.GetUserEmail();
+            var isOwner = !string.IsNullOrWhiteSpace(currentUserEmail) &&
+                          string.Equals(currentUserEmail, changeRequest.RequestorEmail, StringComparison.OrdinalIgnoreCase);
+            var availableStatuses = GetAvailableStatuses(changeRequest.Status, isApprover, isOwner);
+
+            if (_userService.IsAuthenticated())
+            {
+                var resolvedName = _userService.GetUserName();
+                if (!string.IsNullOrWhiteSpace(resolvedName))
+                {
+                    modifiedBy = resolvedName;
+                }
+            }
+
             if (string.IsNullOrWhiteSpace(modifiedBy))
             {
                 ModelState.AddModelError("", "Modified by field is required.");
                 
-                var changeRequest = await _changeRequestService.GetChangeRequestByIdAsync(id);
                 ViewBag.ChangeRequest = changeRequest;
-                ViewBag.AvailableStatuses = GetAvailableStatuses(changeRequest?.Status ?? ChangeRequestStatus.New);
+                ViewBag.AvailableStatuses = availableStatuses;
+                ViewBag.ModifiedBy = _userService.GetUserName();
+                return View();
+            }
+
+            if (!availableStatuses.Contains(newStatus))
+            {
+                ModelState.AddModelError("", "You are not permitted to move this request to the selected status.");
+                ViewBag.ChangeRequest = changeRequest;
+                ViewBag.AvailableStatuses = availableStatuses;
+                ViewBag.ModifiedBy = _userService.GetUserName();
                 return View();
             }
 
@@ -270,7 +431,12 @@ namespace ArkhamChangeRequest.Controllers
 
             var requestForView = await _changeRequestService.GetChangeRequestByIdAsync(id);
             ViewBag.ChangeRequest = requestForView;
-            ViewBag.AvailableStatuses = GetAvailableStatuses(requestForView?.Status ?? ChangeRequestStatus.New);
+            var refreshApprover = (await _authorizationService.AuthorizeAsync(User, null, "ChangeApproversOnly")).Succeeded;
+            var refreshOwner = !string.IsNullOrWhiteSpace(currentUserEmail) &&
+                               requestForView != null &&
+                               string.Equals(currentUserEmail, requestForView.RequestorEmail, StringComparison.OrdinalIgnoreCase);
+            ViewBag.AvailableStatuses = GetAvailableStatuses(requestForView?.Status ?? ChangeRequestStatus.New, refreshApprover, refreshOwner);
+            ViewBag.ModifiedBy = _userService.GetUserName();
             return View();
         }
 
@@ -289,25 +455,105 @@ namespace ArkhamChangeRequest.Controllers
             return View(auditTrail);
         }
 
-        private List<ChangeRequestStatus> GetAvailableStatuses(ChangeRequestStatus currentStatus)
+        [HttpGet]
+        public async Task<IActionResult> DownloadAttachment(int requestId, int attachmentId)
+        {
+            var changeRequest = await _changeRequestService.GetChangeRequestByIdAsync(requestId);
+            if (changeRequest == null)
+            {
+                return NotFound();
+            }
+
+            var attachment = changeRequest.AttachmentFiles.FirstOrDefault(a => a.Id == attachmentId);
+            if (attachment == null)
+            {
+                return NotFound();
+            }
+
+            var isApprover = (await _authorizationService.AuthorizeAsync(User, null, "ChangeApproversOnly")).Succeeded;
+            var currentUserEmail = _userService.GetUserEmail();
+            var isOwner = !string.IsNullOrWhiteSpace(currentUserEmail) &&
+                          string.Equals(currentUserEmail, changeRequest.RequestorEmail, StringComparison.OrdinalIgnoreCase);
+
+            if (!isOwner && !isApprover)
+            {
+                return Forbid();
+            }
+
+            var fileStream = await _blobStorageService.DownloadFileAsync(attachment.BlobUrl);
+            if (fileStream == null)
+            {
+                return NotFound();
+            }
+
+            var contentType = string.IsNullOrWhiteSpace(attachment.ContentType)
+                ? "application/octet-stream"
+                : attachment.ContentType;
+
+            return File(fileStream, contentType, attachment.FileName);
+        }
+
+        private List<ChangeRequestStatus> GetAvailableStatuses(
+            ChangeRequestStatus currentStatus,
+            bool isApprover,
+            bool isRequestOwner)
         {
             var availableStatuses = new List<ChangeRequestStatus>();
 
             switch (currentStatus)
             {
                 case ChangeRequestStatus.New:
-                    availableStatuses.AddRange(new[] { ChangeRequestStatus.Approved, ChangeRequestStatus.Cancelled });
+                    if (isApprover)
+                    {
+                        availableStatuses.Add(ChangeRequestStatus.Approved);
+                        availableStatuses.Add(ChangeRequestStatus.Cancelled);
+                    }
                     break;
                 case ChangeRequestStatus.Approved:
-                    availableStatuses.AddRange(new[] { ChangeRequestStatus.Complete, ChangeRequestStatus.Cancelled });
+                    if (isApprover || isRequestOwner)
+                    {
+                        availableStatuses.Add(ChangeRequestStatus.Complete);
+                        availableStatuses.Add(ChangeRequestStatus.OnHold);
+                        availableStatuses.Add(ChangeRequestStatus.Abandoned);
+                    }
+                    break;
+                case ChangeRequestStatus.OnHold:
+                    if (isApprover || isRequestOwner)
+                    {
+                        availableStatuses.Add(ChangeRequestStatus.Complete);
+                        availableStatuses.Add(ChangeRequestStatus.Abandoned);
+                    }
                     break;
                 case ChangeRequestStatus.Complete:
+                case ChangeRequestStatus.Abandoned:
                 case ChangeRequestStatus.Cancelled:
                     // Terminal states - no transitions allowed
                     break;
             }
 
             return availableStatuses;
+        }
+
+        private List<SelectListItem> GetServiceOptions()
+        {
+            var services = _configuration.GetSection("Services:Catalog").Get<List<string>>();
+
+            if (services == null || services.Count == 0)
+            {
+                services = new List<string>
+                {
+                    "Arkham Automate",
+                    "Arkham AI App Builder",
+                    "Arkham Consulting",
+                    "Arkham RPA",
+                    "Arkham Edge Computing",
+                    "Arkham Fraud Detect"
+                };
+            }
+
+            return services
+                .Select(s => new SelectListItem { Value = s, Text = s })
+                .ToList();
         }
     }
 }

@@ -1,0 +1,56 @@
+@{
+    ViewData["Title"] = "Access Denied";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var allowedGroups = ViewBag.AllowedGroups as string[] ?? Array.Empty<string>();
+    var userGroupClaims = ViewBag.UserGroupClaims as string[] ?? Array.Empty<string>();
+}
+
+<div class="access-denied-overlay">
+    <div class="access-denied-modal">
+        <div class="access-denied-icon">⚠️</div>
+        <h2>Access denied</h2>
+        <p class="access-denied-description">
+            You signed in successfully, but your account is not part of the groups that can use this portal.
+        </p>
+
+        @if (allowedGroups.Length > 0)
+        {
+            <p class="access-denied-helper">Ask an administrator to add you to one of the following Azure AD / Auth0 groups:</p>
+            <ul class="access-denied-group-list">
+                @foreach (var group in allowedGroups)
+                {
+                    <li>@group</li>
+                }
+            </ul>
+        }
+
+        <div class="access-denied-actions">
+            <form asp-controller="Account" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-primary">Switch account</button>
+            </form>
+            <a class="btn btn-secondary" asp-controller="ChangeRequest" asp-action="Create">Return home</a>
+        </div>
+
+        <details class="access-denied-debug" @(userGroupClaims.Length > 0 ? "open" : "")>
+            <summary>Raw group claim values received from Auth0 (for troubleshooting)</summary>
+            @if (userGroupClaims.Length == 0)
+            {
+                <p>No group claims were included in the token.</p>
+            }
+            else
+            {
+                <ul>
+                    @foreach (var claim in userGroupClaims)
+                    {
+                        <li>@claim</li>
+                    }
+                </ul>
+            }
+            <p class="debug-note">
+                Copy the value that represents your Arkham group and add it to <code>Auth0:AllowedGroups</code>
+                or <code>Auth0:AllowedGroupIds</code> in <code>appsettings.Development.json</code>.
+            </p>
+        </details>
+    </div>
+</div>

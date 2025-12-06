@@ -3,6 +3,16 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
     var changeRequest = ViewBag.ChangeRequest as ArkhamChangeRequest.Models.ChangeRequest;
     var availableStatuses = ViewBag.AvailableStatuses as List<ArkhamChangeRequest.Models.ChangeRequestStatus>;
+    var modifiedByValue = ViewBag.ModifiedBy as string ?? string.Empty;
+    var hasAvailableStatuses = availableStatuses != null && availableStatuses.Any();
+    Func<ArkhamChangeRequest.Models.ChangeRequestStatus, string> formatStatus = status =>
+        status switch
+        {
+            ArkhamChangeRequest.Models.ChangeRequestStatus.Cancelled => "Rejected",
+            ArkhamChangeRequest.Models.ChangeRequestStatus.OnHold => "On-Hold",
+            _ => status.ToString()
+        };
+    var currentStatusLabel = changeRequest != null ? formatStatus(changeRequest.Status) : string.Empty;
 }
 
 <div class="change-request-container">
@@ -33,7 +43,7 @@
                 </div>
                 <div class="summary-item">
                     <label>Current Status:</label>
-                    <span class="status-badge status-@changeRequest?.Status.ToString().ToLower()">@changeRequest?.Status</span>
+                    <span class="status-badge status-@changeRequest?.Status.ToString().ToLower()">@currentStatusLabel</span>
                 </div>
                 <div class="summary-item">
                     <label>Priority:</label>
@@ -43,62 +53,78 @@
         </div>
 
         <!-- Status Update Form -->
-        <form asp-action="UpdateStatus" method="post" class="status-form">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="id" value="@changeRequest?.Id" />
-            
+        @if (!hasAvailableStatuses)
+        {
             <div class="status-section">
-                <h4 class="section-title">Status Update</h4>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="newStatus" class="form-label required">New Status</label>
-                        <select name="newStatus" id="newStatus" class="form-control" required>
-                            <option value="">Select new status</option>
-                            @if (availableStatuses != null)
-                            {
-                                @foreach (var status in availableStatuses)
-                                {
-                                    <option value="@status">@status</option>
-                                }
-                            }
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="modifiedBy" class="form-label required">Modified By</label>
-                        <input type="text" name="modifiedBy" id="modifiedBy" class="form-control" 
-                               placeholder="Enter your name or email" required />
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="comments" class="form-label">Comments</label>
-                    <textarea name="comments" id="comments" class="form-control" rows="4" 
-                              placeholder="Optional: Add comments about this status change..."></textarea>
-                </div>
-                
-                <div class="status-info">
-                    <h5>Status Definitions:</h5>
-                    <ul>
-                        <li><strong>New:</strong> Change request has been submitted and awaiting approval</li>
-                        <li><strong>Approved:</strong> Change has been approved and ready for implementation</li>
-                        <li><strong>Complete:</strong> Change has been successfully implemented</li>
-                        <li><strong>Cancelled:</strong> Change request has been cancelled or rejected</li>
-                    </ul>
+                <div class="alert alert-info">
+                    No status changes are available for this request at the moment.
                 </div>
             </div>
-
-            <!-- Action Buttons -->
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Update Status
-                </button>
                 <a asp-action="Details" asp-route-id="@changeRequest?.Id" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Details
                 </a>
             </div>
-        </form>
+        }
+        else
+        {
+            <form asp-action="UpdateStatus" method="post" class="status-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@changeRequest?.Id" />
+                
+                <div class="status-section">
+                    <h4 class="section-title">Status Update</h4>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="newStatus" class="form-label required">Status</label>
+                            <select name="newStatus" id="newStatus" class="form-control" required>
+                                <option value="">Select status</option>
+                                @foreach (var status in availableStatuses!)
+                                {
+                                    var statusLabel = formatStatus(status);
+                                    <option value="@status">@statusLabel</option>
+                                }
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="modifiedBy" class="form-label required">Modified By</label>
+                            <input type="text" name="modifiedBy" id="modifiedBy" class="form-control" 
+                                   value="@modifiedByValue" readonly="readonly" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="comments" class="form-label">Comments</label>
+                        <textarea name="comments" id="comments" class="form-control" rows="4" 
+                                  placeholder="Optional: Add comments about this status change..."></textarea>
+                    </div>
+                    
+                    <div class="status-info">
+                        <h5>Status Definitions:</h5>
+                        <ul>
+                            <li><strong>New:</strong> Change request has been submitted and awaiting approval</li>
+                            <li><strong>Approved:</strong> Change has been approved and ready for implementation</li>
+                            <li><strong>On-Hold:</strong> Implementation paused pending further information</li>
+                            <li><strong>Complete:</strong> Change has been successfully implemented</li>
+                            <li><strong>Abandoned:</strong> Change will not be implemented after approval</li>
+                            <li><strong>Rejected:</strong> Change request has been formally declined</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Status
+                    </button>
+                    <a asp-action="Details" asp-route-id="@changeRequest?.Id" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Details
+                    </a>
+                </div>
+            </form>
+        }
     </div>
 </div>
 
@@ -174,28 +200,37 @@
 }
 
 .status-info {
-    background: #f5f5f5;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    padding: 15px;
-    margin-top: 20px;
+    background: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 18px;
+    margin-top: 24px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
 }
 
 .status-info h5 {
-    margin: 0 0 10px 0;
+    margin: 0 0 12px 0;
     color: var(--text-color);
-    font-size: 1rem;
+    font-size: 0.95rem;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
 }
 
 .status-info ul {
     margin: 0;
-    padding-left: 20px;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .status-info li {
-    margin-bottom: 8px;
+    background: var(--tertiary-bg);
+    border-radius: 6px;
+    padding: 10px 14px;
     color: var(--text-secondary);
-    line-height: 1.4;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .status-info strong {

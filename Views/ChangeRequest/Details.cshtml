@@ -1,8 +1,23 @@
 @model ArkhamChangeRequest.Models.ChangeRequest
+@using System.Linq
 
 @{
     ViewData["Title"] = $"Change Request #{Model.Id}";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var isApprover = ViewBag.IsApprover as bool? ?? false;
+    var isRequestOwner = ViewBag.IsRequestOwner as bool? ?? false;
+    var ownerCanUpdateStatus = ViewBag.OwnerCanUpdateStatus as bool? ?? false;
+    Func<ArkhamChangeRequest.Models.ChangeRequestStatus, string> getStatusLabel = status =>
+        status switch
+        {
+            ArkhamChangeRequest.Models.ChangeRequestStatus.Cancelled => "Rejected",
+            ArkhamChangeRequest.Models.ChangeRequestStatus.OnHold => "On-Hold",
+            _ => status.ToString()
+        };
+    var rejectionAudit = Model.AuditTrail?
+        .OrderByDescending(a => a.ModifiedDate)
+        .FirstOrDefault(a => string.Equals(a.NewStatus, ArkhamChangeRequest.Models.ChangeRequestStatus.Cancelled.ToString(), StringComparison.OrdinalIgnoreCase));
+    var currentStatusLabel = getStatusLabel(Model.Status);
 }
 
 <div class="change-request-container">
@@ -16,21 +31,35 @@
     <div class="form-container">
         <div class="details-header">
             <h3 class="form-title">Change Request #@Model.Id</h3>
-            <div class="status-badge status-@Model.Status.ToString().ToLower()">@Model.Status</div>
+            <div class="status-badge status-@Model.Status.ToString().ToLower()">@currentStatusLabel</div>
         </div>
+
+        @if (Model.Status == ArkhamChangeRequest.Models.ChangeRequestStatus.Cancelled && rejectionAudit != null)
+        {
+            <div class="alert alert-danger rejection-alert">
+                <strong>Request rejected on @rejectionAudit.ModifiedDate.ToLocalTime().ToString("dd MMM yyyy HH:mm")</strong>
+                @if (!string.IsNullOrWhiteSpace(rejectionAudit.ModifiedBy))
+                {
+                    <span class="rejection-by"> by @rejectionAudit.ModifiedBy</span>
+                }
+                <p class="rejection-reason">
+                    @(string.IsNullOrWhiteSpace(rejectionAudit.Comments) ? "No rejection notes were provided." : rejectionAudit.Comments)
+                </p>
+            </div>
+        }
         
         <div class="details-content">
             <!-- Requestor Information -->
             <div class="details-section">
                 <h4>Requestor Information</h4>
-                <div class="form-row">
-                    <div class="detail-item">
-                        <label>Requestor Name:</label>
-                        <span>@Model.RequestorName</span>
+                <div class="detail-grid two-columns">
+                    <div class="detail-field">
+                        <span class="field-label">Requestor Name</span>
+                        <span class="field-value">@Model.RequestorName</span>
                     </div>
-                    <div class="detail-item">
-                        <label>Email:</label>
-                        <span>@Model.RequestorEmail</span>
+                    <div class="detail-field">
+                        <span class="field-label">Email</span>
+                        <span class="field-value">@Model.RequestorEmail</span>
                     </div>
                 </div>
             </div>
@@ -38,41 +67,43 @@
             <!-- Change Information -->
             <div class="details-section">
                 <h4>Change Information</h4>
-                <div class="detail-item">
-                    <label>Title:</label>
-                    <span>@Model.ChangeTitle</span>
-                </div>
-                <div class="detail-item">
-                    <label>Description:</label>
-                    <div class="description-text">@Model.ChangeDescription</div>
-                </div>
-                @if (!string.IsNullOrEmpty(Model.AuthorizationServiceAffected))
-                {
-                    <div class="detail-item">
-                        <label>Authorization/Service Affected:</label>
-                        <div class="description-text">@Model.AuthorizationServiceAffected</div>
+                <div class="detail-grid two-columns">
+                    <div class="detail-field">
+                        <span class="field-label">Title</span>
+                        <span class="field-value">@Model.ChangeTitle</span>
                     </div>
-                }
+                    @if (!string.IsNullOrEmpty(Model.AuthorizationServiceAffected))
+                    {
+                        <div class="detail-field">
+                            <span class="field-label">Authorization/Service Affected</span>
+                            <span class="field-value">@Model.AuthorizationServiceAffected</span>
+                        </div>
+                    }
+                    <div class="detail-field full-width">
+                        <span class="field-label">Description</span>
+                        <div class="description-text">@Model.ChangeDescription</div>
+                    </div>
+                </div>
             </div>
 
             <!-- Implementation Details -->
             <div class="details-section">
                 <h4>Implementation Details</h4>
-                <div class="form-row">
+                <div class="detail-grid three-columns">
                     @if (Model.ProposedImplementationDate.HasValue)
                     {
-                        <div class="detail-item">
-                            <label>Proposed Implementation Date:</label>
-                            <span>@Model.ProposedImplementationDate.Value.ToString("yyyy-MM-dd HH:mm")</span>
+                        <div class="detail-field">
+                            <span class="field-label">Proposed Implementation Date</span>
+                            <span class="field-value">@Model.ProposedImplementationDate.Value.ToString("yyyy-MM-dd HH:mm")</span>
                         </div>
                     }
-                    <div class="detail-item">
-                        <label>Change Type:</label>
-                        <span>@Model.ChangeType</span>
+                    <div class="detail-field">
+                        <span class="field-label">Change Type</span>
+                        <span class="field-value">@Model.ChangeType</span>
                     </div>
-                    <div class="detail-item">
-                        <label>Priority:</label>
-                        <span class="priority-@Model.Priority.ToString().ToLower()">@Model.Priority</span>
+                    <div class="detail-field">
+                        <span class="field-label">Priority</span>
+                        <span class="field-value priority-@Model.Priority.ToString().ToLower()">@Model.Priority</span>
                     </div>
                 </div>
             </div>
@@ -80,7 +111,7 @@
             <!-- Risk Assessment -->
             <div class="details-section">
                 <h4>Risk Assessment</h4>
-                <div class="detail-item">
+                <div class="detail-field full-width">
                     <div class="description-text">@Model.RiskAssessment</div>
                 </div>
             </div>
@@ -90,7 +121,7 @@
             {
                 <div class="details-section">
                     <h4>Backout Plan</h4>
-                    <div class="detail-item">
+                    <div class="detail-field full-width">
                         <div class="description-text">@Model.BackoutPlan</div>
                     </div>
                 </div>
@@ -105,9 +136,19 @@
                         @foreach (var attachment in Model.AttachmentFiles)
                         {
                             <div class="attachment-item">
-                                <span class="attachment-name">@attachment.FileName</span>
-                                <span class="attachment-size">(@((attachment.FileSize / 1024.0 / 1024.0).ToString("F2")) MB)</span>
-                                <span class="attachment-date">Uploaded: @attachment.UploadedDate.ToString("yyyy-MM-dd HH:mm")</span>
+                                <div class="attachment-info">
+                                    <span class="attachment-name">@attachment.FileName</span>
+                                    <span class="attachment-size">(@((attachment.FileSize / 1024.0 / 1024.0).ToString("F2")) MB)</span>
+                                </div>
+                                <div class="attachment-meta">
+                                    <span class="attachment-date">Uploaded: @attachment.UploadedDate.ToString("yyyy-MM-dd HH:mm")</span>
+                                    <a asp-action="DownloadAttachment"
+                                       asp-route-requestId="@Model.Id"
+                                       asp-route-attachmentId="@attachment.Id"
+                                       class="btn btn-sm btn-outline attachment-download">
+                                        Download
+                                    </a>
+                                </div>
                             </div>
                         }
                     </div>
@@ -119,18 +160,18 @@
                 <h4>Approval Information</h4>
                 @if (!string.IsNullOrEmpty(Model.ApproverName))
                 {
-                    <div class="form-row">
-                        <div class="detail-item">
-                            <label>Approver Name:</label>
-                            <span>@Model.ApproverName</span>
+                    <div class="detail-grid three-columns">
+                        <div class="detail-field">
+                            <span class="field-label">Approver Name</span>
+                            <span class="field-value">@Model.ApproverName</span>
                         </div>
-                        <div class="detail-item">
-                            <label>Approver Email:</label>
-                            <span>@Model.ApproverEmail</span>
+                        <div class="detail-field">
+                            <span class="field-label">Approver Email</span>
+                            <span class="field-value">@Model.ApproverEmail</span>
                         </div>
-                        <div class="detail-item">
-                            <label>Approval Date:</label>
-                            <span>@Model.ApprovalDate?.ToString("yyyy-MM-dd HH:mm")</span>
+                        <div class="detail-field">
+                            <span class="field-label">Approval Date</span>
+                            <span class="field-value">@Model.ApprovalDate?.ToString("yyyy-MM-dd HH:mm")</span>
                         </div>
                     </div>
                 }
@@ -143,24 +184,26 @@
             <!-- Metadata -->
             <div class="details-section">
                 <h4>Request Information</h4>
-                <div class="form-row">
-                    <div class="detail-item">
-                        <label>Created Date:</label>
-                        <span>@Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")</span>
+                <div class="detail-grid three-columns">
+                    <div class="detail-field">
+                        <span class="field-label">Created Date</span>
+                        <span class="field-value">@Model.CreatedDate.ToString("yyyy-MM-dd HH:mm")</span>
                     </div>
-                    <div class="detail-item">
-                        <label>Status:</label>
-                        <span class="status-badge status-@Model.Status.ToString().ToLower()">@Model.Status</span>
+                    <div class="detail-field">
+                        <span class="field-label">Status</span>
+                        <span class="field-value status-wrap">
+                            <span class="status-badge status-@Model.Status.ToString().ToLower()">@currentStatusLabel</span>
+                        </span>
                     </div>
                     @if (Model.LastModifiedDate.HasValue)
                     {
-                        <div class="detail-item">
-                            <label>Last Modified:</label>
-                            <span>@Model.LastModifiedDate?.ToString("yyyy-MM-dd HH:mm")</span>
+                        <div class="detail-field">
+                            <span class="field-label">Last Modified</span>
+                            <span class="field-value">@Model.LastModifiedDate?.ToString("yyyy-MM-dd HH:mm")</span>
                         </div>
-                        <div class="detail-item">
-                            <label>Modified By:</label>
-                            <span>@Model.LastModifiedBy</span>
+                        <div class="detail-field">
+                            <span class="field-label">Modified By</span>
+                            <span class="field-value">@Model.LastModifiedBy</span>
                         </div>
                     }
                 </div>
@@ -168,36 +211,70 @@
         </div>
 
         <!-- Management Actions -->
-        <div class="management-actions">
-            <h4>Management Actions</h4>
-            <div class="action-buttons">
-                @if (Model.Status == ArkhamChangeRequest.Models.ChangeRequestStatus.New)
-                {
-                    <a asp-action="Approve" asp-route-id="@Model.Id" class="btn btn-success">
-                        <i class="fas fa-check"></i> Approve Request
+        @if (isApprover)
+        {
+            <div class="management-actions">
+                <h4>Management Actions</h4>
+                <div class="action-buttons">
+                    @if (Model.Status == ArkhamChangeRequest.Models.ChangeRequestStatus.New)
+                    {
+                        <a asp-action="Approve" asp-route-id="@Model.Id" class="btn btn-success">
+                            <i class="fas fa-check"></i> Approve Request
+                        </a>
+                    }
+                    
+                    @if (Model.Status != ArkhamChangeRequest.Models.ChangeRequestStatus.Complete &&
+                         Model.Status != ArkhamChangeRequest.Models.ChangeRequestStatus.Cancelled &&
+                         Model.Status != ArkhamChangeRequest.Models.ChangeRequestStatus.Abandoned)
+                    {
+                        <a asp-action="UpdateStatus" asp-route-id="@Model.Id" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Update Status
+                        </a>
+                    }
+                    
+                    <a asp-action="AuditTrail" asp-route-id="@Model.Id" class="btn btn-info">
+                        <i class="fas fa-history"></i> View Audit Trail
                     </a>
-                }
-                
-                @if (Model.Status != ArkhamChangeRequest.Models.ChangeRequestStatus.Complete && 
-                     Model.Status != ArkhamChangeRequest.Models.ChangeRequestStatus.Cancelled)
-                {
-                    <a asp-action="UpdateStatus" asp-route-id="@Model.Id" class="btn btn-warning">
-                        <i class="fas fa-edit"></i> Update Status
+                    
+                    @if (Model.Status == ArkhamChangeRequest.Models.ChangeRequestStatus.New)
+                    {
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-secondary">
+                            <i class="fas fa-edit"></i> Edit Request
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+        else if (isRequestOwner && (Model.Status == ArkhamChangeRequest.Models.ChangeRequestStatus.New || ownerCanUpdateStatus))
+        {
+            <div class="management-actions owner-actions">
+                <h4>Your Actions</h4>
+                <div class="action-buttons">
+                    @if (Model.Status == ArkhamChangeRequest.Models.ChangeRequestStatus.New)
+                    {
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-secondary">
+                            <i class="fas fa-edit"></i> Edit Request
+                        </a>
+                    }
+                    @if (ownerCanUpdateStatus)
+                    {
+                        <a asp-action="UpdateStatus" asp-route-id="@Model.Id" class="btn btn-warning">
+                            <i class="fas fa-tasks"></i> Update Status
+                        </a>
+                    }
+                    <a asp-action="AuditTrail" asp-route-id="@Model.Id" class="btn btn-info">
+                        <i class="fas fa-history"></i> View Audit Trail
                     </a>
-                }
-                
-                <a asp-action="AuditTrail" asp-route-id="@Model.Id" class="btn btn-info">
-                    <i class="fas fa-history"></i> View Audit Trail
-                </a>
-                
-                @if (Model.Status == ArkhamChangeRequest.Models.ChangeRequestStatus.New)
+                </div>
+                @if (ownerCanUpdateStatus)
                 {
-                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-secondary">
-                        <i class="fas fa-edit"></i> Edit Request
-                    </a>
+                    <p class="action-help-text">
+                        Once your change is implemented, use <strong>Update Status</strong> to mark it as
+                        Complete, On-Hold, or Abandoned.
+                    </p>
                 }
             </div>
-        </div>
+        }
 
         <!-- Actions -->
         <div class="form-actions">

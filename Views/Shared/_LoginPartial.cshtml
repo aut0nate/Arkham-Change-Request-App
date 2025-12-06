@@ -3,19 +3,35 @@
 
 @if (UserService.IsAuthenticated())
 {
+    var displayName = UserService.GetUserName();
+    var initials = "?";
+    if (!string.IsNullOrWhiteSpace(displayName))
+    {
+        var parts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        initials = new string(parts.Select(p => char.ToUpperInvariant(p[0])).Take(2).ToArray());
+    }
+
     <div class="user-dropdown">
         <div class="user-trigger">
-            <span class="user-display-name">@UserService.GetUserName()</span>
-            <span class="dropdown-arrow">▼</span>
+            <span class="user-avatar">@initials</span>
+            <span class="user-display-name">@displayName</span>
+            <span class="dropdown-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </span>
         </div>
         <div class="user-dropdown-menu">
             <div class="user-email-display">@UserService.GetUserEmail()</div>
             <hr class="dropdown-divider">
-            <a href="/.auth/logout" class="sign-out-link">Sign out</a>
+            <form asp-controller="Account" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="sign-out-link">Sign out</button>
+            </form>
         </div>
     </div>
 }
 else
 {
-    <a class="nav-link text-dark" href="/.auth/login/aad">Sign in</a>
+    <a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Sign in</a>
 }

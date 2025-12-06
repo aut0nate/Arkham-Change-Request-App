@@ -492,5 +492,34 @@ namespace ArkhamChangeRequest.Services
                 throw;
             }
         }
+
+        public async Task<IEnumerable<ChangeRequest>> GetPendingApprovalsAsync()
+        {
+            using var operation = _telemetryClient.StartOperation<DependencyTelemetry>("GetPendingApprovals");
+            try
+            {
+                var results = await _context.ChangeRequests
+                    .Include(cr => cr.AttachmentFiles)
+                    .Where(cr => cr.Status == ChangeRequestStatus.New)
+                    .OrderBy(cr => cr.ProposedImplementationDate ?? cr.CreatedDate)
+                    .ToListAsync();
+
+                _telemetryClient.TrackEvent("PendingApprovalsRetrieved", new Dictionary<string, string>
+                {
+                    {"Count", results.Count.ToString()}
+                });
+
+                return results;
+            }
+            catch (Exception ex)
+            {
+                _telemetryClient.TrackException(ex, new Dictionary<string, string>
+                {
+                    {"Operation", "GetPendingApprovals"}
+                });
+                operation.Telemetry.Success = false;
+                throw;
+            }
+        }
     }
 }
