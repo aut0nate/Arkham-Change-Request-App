@@ -300,8 +300,30 @@ The application uses the following configuration structure (mirrored between `ap
 
 Sensitive configuration values are stored in Azure Key Vault:
 - Database connection strings
-- Storage account keys
+- Storage account keys  
 - Application secrets
+
+### Azure App Service configuration
+
+Production deployments rely on App Service environment variables and Key Vault references rather than values in `appsettings.json`. Configure the following settings (Portal → Settings → Environment variables). Use `@Microsoft.KeyVault(SecretUri=...)` for secrets.
+
+```
+ConnectionStrings__DefaultConnection      = <Key Vault reference to SqlConnectionString>
+ConnectionStrings__AzureStorage           = <Key Vault reference if you are not using Managed Identity>
+KeyVaultSettings__VaultUrl                = https://arkham-kv.vault.azure.net/
+BlobSettings__AccountName                 = arkhamchange
+BlobSettings__ContainerName               = changerequests
+Auth0__Domain                             = arkham.uk.auth0.com
+Auth0__ClientId                           = <Auth0 client id>
+Auth0__ClientSecret                       = <Key Vault reference to Auth0ClientSecret>
+Auth0__Connection                         = arkham-change-app
+Auth0__CallbackPath                       = /callback
+Auth0__LogoutUrl                          = https://arkham-change.azurewebsites.net/Account/SignedOut
+Auth0__AllowedGroupIds__0..n              = <Azure AD group GUIDs>
+Auth0__ApproverGroupIds__0..n             = 919b0a22-7de1-4262-9f4a-d36d16a99a0b
+ApplicationInsights__ConnectionString     = <App Insights connection string or Key Vault reference>
+ASPNETCORE_ENVIRONMENT                    = Production
+```
 
 ## Mobile Responsive Design
 
