@@ -16,8 +16,16 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using Azure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var keyVaultUrl = builder.Configuration["KeyVaultSettings:VaultUrl"];
+if (!string.IsNullOrWhiteSpace(keyVaultUrl))
+{
+    var credential = new DefaultAzureCredential();
+    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUrl), credential);
+}
 
 var auth0Section = builder.Configuration.GetSection("Auth0");
 var auth0Domain = auth0Section["Domain"] ?? throw new InvalidOperationException("Auth0:Domain is not configured.");
@@ -203,18 +211,28 @@ builder.Services.AddAuthorization(options =>
                     .Where(value => !string.IsNullOrWhiteSpace(value))
                     .ToList();
 
-                if (allowedGroupIdsSet.Any() &&
-                    claimValues.Any(value => allowedGroupIdsSet.Contains(NormalizeGuidString(value))))
-                {
-                    return true;
-                }
+        if (allowedGroupIdsSet.Any())
+        {
+            var hasAllowedId = claimValues.Any(value =>
+                ExpandGroupTokens(value).Any(token =>
+                    allowedGroupIdsSet.Contains(NormalizeGuidString(token))));
 
-                if (allowedGroupNamesSet.Any() &&
-                    claimValues.Any(value =>
-                        ExpandGroupTokens(value).Any(token => allowedGroupNamesSet.Contains(token))))
-                {
-                    return true;
-                }
+            if (hasAllowedId)
+            {
+                return true;
+            }
+        }
+
+        if (allowedGroupNamesSet.Any())
+        {
+            var hasAllowedName = claimValues.Any(value =>
+                ExpandGroupTokens(value).Any(token => allowedGroupNamesSet.Contains(token)));
+
+            if (hasAllowedName)
+            {
+                return true;
+            }
+        }
 
                 if (allowedEmailSet.Any())
                 {
@@ -274,11 +292,33 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 });
 
 // Add Azure Blob Storage
-builder.Services.AddSingleton(x => 
+builder.Services.AddSingleton(provider =>
 {
+    var configuration = provider.GetRequiredService<IConfiguration>();
+    var accountUrl = configuration["BlobSettings:AccountUrl"];
+    var accountName = configuration["BlobSettings:AccountName"];
+    var credential = new DefaultAzureCredential();
+
+    if (!string.IsNullOrWhiteSpace(accountUrl))
+    {
+        return new BlobServiceClient(new Uri(accountUrl), credential);
+    }
+
+    if (!string.IsNullOrWhiteSpace(accountName))
+    {
+        var uri = new Uri($"https://{accountName}.blob.core.windows.net");
+        return new BlobServiceClient(uri, credential);
+    }
+
     // Try Key Vault first, then fallback to connection string
-    var storageConnectionString = builder.Configuration["AzureStorageConnectionString"] 
-        ?? builder.Configuration.GetConnectionString("AzureStorage");
+    var storageConnectionString = configuration["AzureStorageConnectionString"]
+        ?? configuration.GetConnectionString("AzureStorage");
+
+    if (string.IsNullOrWhiteSpace(storageConnectionString))
+    {
+        throw new InvalidOperationException("Azure Storage configuration is missing.");
+    }
+
     return new BlobServiceClient(storageConnectionString);
 });
 
