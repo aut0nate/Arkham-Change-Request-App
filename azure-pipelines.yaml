@@ -1,0 +1,61 @@
+trigger:
+  branches: [ main ]
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  outputDir: 'publish'
+
+stages:
+- stage: Build
+  jobs:
+  - job: Build
+    steps:
+    - task: UseDotNet@2
+      inputs:
+        packageType: sdk
+        version: '8.x'
+
+    - task: DotNetCoreCLI@2
+      displayName: Restore
+      inputs:
+        command: restore
+        projects: '**/*.csproj'
+
+    - task: DotNetCoreCLI@2
+      displayName: Build
+      inputs:
+        command: build
+        projects: '**/*.csproj'
+        arguments: '-c $(buildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: Publish
+      inputs:
+        command: publish
+        publishWebProjects: false
+        projects: '**/ArkhamChangeRequest.csproj'
+        arguments: '-c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/$(outputDir)'
+        zipAfterPublish: true
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: '$(Build.ArtifactStagingDirectory)/$(outputDir)'
+        artifactName: drop
+
+# Uncomment this stage when you’re ready to deploy
+#- stage: Deploy
+#  dependsOn: Build
+#  jobs:
+#  - job: DeployWebApp
+#    steps:
+#    - download: current
+#      artifact: drop
+#    - task: AzureWebApp@1
+#      inputs:
+#        azureSubscription: 'sc-azure-rg'      # your service connection name
+#        appType: webApp
+#        appName: 'arkham-change'              # your App Service name
+#        package: '$(Pipeline.Workspace)/drop/*.zip'
