@@ -1,5 +1,5 @@
 trigger:
-  branches: [ main ]
+  - main
 
 pool:
   vmImage: 'windows-latest'
@@ -10,42 +10,46 @@ variables:
 
 stages:
 - stage: Build
+  displayName: Build and package
   jobs:
   - job: Build
     steps:
     - task: UseDotNet@2
+      displayName: Use .NET 8 SDK
       inputs:
-        packageType: sdk
+        packageType: 'sdk'
         version: '8.x'
 
     - task: DotNetCoreCLI@2
       displayName: Restore
       inputs:
-        command: restore
+        command: 'restore'
         projects: '**/*.csproj'
 
     - task: DotNetCoreCLI@2
       displayName: Build
       inputs:
-        command: build
+        command: 'build'
         projects: '**/*.csproj'
         arguments: '-c $(buildConfiguration)'
 
     - task: DotNetCoreCLI@2
-      displayName: Publish
+      displayName: Publish web app
       inputs:
-        command: publish
+        command: 'publish'
         publishWebProjects: false
         projects: '**/ArkhamChangeRequest.csproj'
         arguments: '-c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/$(outputDir)'
         zipAfterPublish: true
 
     - task: PublishBuildArtifacts@1
+      displayName: Publish artifact
       inputs:
         pathToPublish: '$(Build.ArtifactStagingDirectory)/$(outputDir)'
-        artifactName: drop
+        artifactName: 'drop'
 
-# Uncomment this stage when you’re ready to deploy
+# To enable deployment, add a Deploy stage and set azureSubscription to your service connection
+# and appName to your Azure Web App name, e.g.:
 #- stage: Deploy
 #  dependsOn: Build
 #  jobs:
@@ -55,7 +59,7 @@ stages:
 #      artifact: drop
 #    - task: AzureWebApp@1
 #      inputs:
-#        azureSubscription: 'sc-azure-rg'      # your service connection name
-#        appType: webApp
-#        appName: 'arkham-change'              # your App Service name
+#        azureSubscription: '<your-service-connection-name>'
+#        appType: 'webApp'
+#        appName: 'arkham-change'
 #        package: '$(Pipeline.Workspace)/drop/*.zip'
