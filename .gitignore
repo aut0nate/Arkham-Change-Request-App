@@ -57,12 +57,6 @@ bower_components/
 ## Secrets and environment-specific config
 .env
 *.env
-appsettings.*.local.json
-appsettings.*.Local.json
-appsettings.*.secrets.json
-appsettings.*.private.json
-appsettings.Production.json
-appsettings.json
 appsettings.Development.json
 
 ## Misc generated files
