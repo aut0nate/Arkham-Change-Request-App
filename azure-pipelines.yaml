@@ -55,7 +55,7 @@ stages:
       displayName: Publish artifact
       inputs:
         pathToPublish: '$(Build.ArtifactStagingDirectory)/$(outputDir)'
-        artifactName: 'drop-$(Build.BuildNumber)'
+        artifactName: 'arkham-change-app-build-$(Build.BuildNumber)'
 
 # To enable deployment, add a Deploy stage and set azureSubscription to your service connection
 # and appName to your Azure Web App name, e.g.:
