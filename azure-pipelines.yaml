@@ -57,6 +57,45 @@ stages:
         pathToPublish: '$(Build.ArtifactStagingDirectory)/$(outputDir)'
         artifactName: 'arkham-change-app-build-$(Build.BuildNumber)'
 
+- stage: Deploy
+  displayName: Deploy to staging then prod
+  dependsOn: Build
+  jobs:
+  - deployment: DeployToStaging
+    displayName: Deploy to staging (F1)
+    environment: arkham-change-staging
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: arkham-change-app-build-$(Build.BuildNumber)
+          - task: AzureWebApp@1
+            displayName: Deploy to staging app
+            inputs:
+              azureSubscription: 'sc-arkham'
+              appType: 'webApp'
+              appName: 'arkham-change-staging'
+              package: '$(Pipeline.Workspace)/arkham-change-app-build-$(Build.BuildNumber)/*.zip'
+
+  - deployment: DeployToProd
+    displayName: Deploy to prod (B1)
+    dependsOn: DeployToStaging
+    environment: arkham-change-prod
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: arkham-change-app-build-$(Build.BuildNumber)
+          - task: AzureWebApp@1
+            displayName: Deploy to prod app
+            inputs:
+              azureSubscription: 'sc-arkham'
+              appType: 'webApp'
+              appName: 'arkham-change'
+              package: '$(Pipeline.Workspace)/arkham-change-app-build-$(Build.BuildNumber)/*.zip'
+
 # To enable deployment, add a Deploy stage and set azureSubscription to your service connection
 # and appName to your Azure Web App name, e.g.:
 #- stage: Deploy
