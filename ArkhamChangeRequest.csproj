@@ -17,6 +17,13 @@
     <PackageReference Include="Microsoft.Identity.Web.UI" Version="3.10.0" />
   </ItemGroup>
 
+  <!-- Exclude the test project sources from the main web project compile globs -->
+  <ItemGroup>
+    <Compile Remove="ArkhamChangeRequest.Tests\**\*.cs" />
+    <EmbeddedResource Remove="ArkhamChangeRequest.Tests\**\*" />
+    <None Remove="ArkhamChangeRequest.Tests\**\*" />
+  </ItemGroup>
+
   <ItemGroup>
     <Content Update="appsettings.Development.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
