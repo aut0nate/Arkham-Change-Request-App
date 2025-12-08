@@ -58,11 +58,11 @@ stages:
         artifactName: 'arkham-change-app-build'
 
 - stage: Deploy
-  displayName: Deploy to staging then prod
+  displayName: Deploy to test then prod
   dependsOn: Build
   jobs:
-  - deployment: DeployToStaging
-    displayName: Deploy to staging (F1)
+  - deployment: DeployToTest
+    displayName: Deploy to Test (F1)
     environment: arkham-change-staging
     strategy:
       runOnce:
@@ -71,7 +71,7 @@ stages:
           - download: current
             artifact: arkham-change-app-build
           - task: AzureWebApp@1
-            displayName: Deploy to staging app
+            displayName: Deploy to Test app
             inputs:
               azureSubscription: 'sc-arkham'
               appType: 'webApp'
@@ -79,8 +79,8 @@ stages:
               package: '$(Pipeline.Workspace)/arkham-change-app-build/*.zip'
 
   - deployment: DeployToProd
-    displayName: Deploy to prod (B1)
-    dependsOn: DeployToStaging
+    displayName: Deploy to Prod (B1)
+    dependsOn: DeployToTest
     environment: arkham-change-prod
     strategy:
       runOnce:
@@ -89,25 +89,9 @@ stages:
           - download: current
             artifact: arkham-change-app-build
           - task: AzureWebApp@1
-            displayName: Deploy to prod app
+            displayName: Deploy to Prod app
             inputs:
               azureSubscription: 'sc-arkham'
               appType: 'webApp'
               appName: 'arkham-change'
               package: '$(Pipeline.Workspace)/arkham-change-app-build/*.zip'
-
-# To enable deployment, add a Deploy stage and set azureSubscription to your service connection
-# and appName to your Azure Web App name, e.g.:
-#- stage: Deploy
-#  dependsOn: Build
-#  jobs:
-#  - job: DeployWebApp
-#    steps:
-#    - download: current
-#      artifact: drop-$(Build.BuildNumber)
-#    - task: AzureWebApp@1
-#      inputs:
-#        azureSubscription: '<your-service-connection-name>'
-#        appType: 'webApp'
-#        appName: 'arkham-change'
-#        package: '$(Pipeline.Workspace)/drop-$(Build.BuildNumber)/*.zip'
