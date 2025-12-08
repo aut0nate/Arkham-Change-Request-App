@@ -34,6 +34,13 @@ stages:
         arguments: '-c $(buildConfiguration)'
 
     - task: DotNetCoreCLI@2
+      displayName: Run tests
+      inputs:
+        command: 'test'
+        projects: '**/*Tests.csproj'
+        arguments: '--configuration $(buildConfiguration) --logger trx'
+
+    - task: DotNetCoreCLI@2
       displayName: Publish web app
       inputs:
         command: 'publish'
