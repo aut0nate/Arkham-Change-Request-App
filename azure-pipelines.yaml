@@ -1,3 +1,5 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
 trigger:
   - main
 
@@ -31,7 +33,7 @@ stages:
       inputs:
         command: 'build'
         projects: '**/*.csproj'
-        arguments: '-c $(buildConfiguration)'
+        arguments: '-c $(buildConfiguration) /p:Version=$(Build.BuildNumber)'
 
     - task: DotNetCoreCLI@2
       displayName: Run tests
@@ -46,14 +48,14 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: '**/ArkhamChangeRequest.csproj'
-        arguments: '-c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/$(outputDir)'
+        arguments: '-c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/$(outputDir) /p:Version=$(Build.BuildNumber)'
         zipAfterPublish: true
 
     - task: PublishBuildArtifacts@1
       displayName: Publish artifact
       inputs:
         pathToPublish: '$(Build.ArtifactStagingDirectory)/$(outputDir)'
-        artifactName: 'drop'
+        artifactName: 'drop-$(Build.BuildNumber)'
 
 # To enable deployment, add a Deploy stage and set azureSubscription to your service connection
 # and appName to your Azure Web App name, e.g.:
@@ -63,10 +65,10 @@ stages:
 #  - job: DeployWebApp
 #    steps:
 #    - download: current
-#      artifact: drop
+#      artifact: drop-$(Build.BuildNumber)
 #    - task: AzureWebApp@1
 #      inputs:
 #        azureSubscription: '<your-service-connection-name>'
 #        appType: 'webApp'
 #        appName: 'arkham-change'
-#        package: '$(Pipeline.Workspace)/drop/*.zip'
+#        package: '$(Pipeline.Workspace)/drop-$(Build.BuildNumber)/*.zip'
