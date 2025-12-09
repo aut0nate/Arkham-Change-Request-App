@@ -1,7 +1,16 @@
+# ============================================
+# Main Branch Deployment Pipeline (CD)
+# Builds, tests, publishes, deploys to staging & prod
+# ============================================
+
 name: 1.0.$(Date:MMdd).$(Rev:r)
 
 trigger:
-  - main
+  branches:
+    include:
+      - main
+
+pr: none
 
 pool:
   vmImage: 'windows-latest'
@@ -11,11 +20,16 @@ variables:
   outputDir: 'publish'
 
 stages:
+# ------------------------
+# BUILD & TEST STAGE
+# ------------------------
 - stage: Build
-  displayName: Build and package
+  displayName: Build, Test, Package
   jobs:
-  - job: Build
+  - job: BuildJob
+    displayName: Build & Test
     steps:
+
     - task: UseDotNet@2
       displayName: Use .NET 8 SDK
       inputs:
@@ -43,7 +57,7 @@ stages:
         arguments: '--configuration $(buildConfiguration) --logger trx'
 
     - task: DotNetCoreCLI@2
-      displayName: Publish web app
+      displayName: Publish Web App
       inputs:
         command: 'publish'
         publishWebProjects: false
@@ -52,17 +66,23 @@ stages:
         zipAfterPublish: true
 
     - task: PublishBuildArtifacts@1
-      displayName: Publish artifact
+      displayName: Publish Artifacts
       inputs:
         pathToPublish: '$(Build.ArtifactStagingDirectory)/$(outputDir)'
         artifactName: 'arkham-change-app-build'
 
+# ------------------------
+# DEPLOYMENT STAGE
+# ------------------------
 - stage: Deploy
-  displayName: Deploy to test then prod
+  displayName: Deploy to Staging, Await Approval, Deploy to Production
   dependsOn: Build
+
   jobs:
-  - deployment: DeployToTest
-    displayName: Deploy to Test (F1)
+
+  # ---- Deploy to Staging ----
+  - deployment: DeployToStaging
+    displayName: Deploy to Staging (F1)
     environment: arkham-change-staging
     strategy:
       runOnce:
@@ -70,17 +90,19 @@ stages:
           steps:
           - download: current
             artifact: arkham-change-app-build
+
           - task: AzureWebApp@1
-            displayName: Deploy to Test app
+            displayName: Deploy to Staging App
             inputs:
               azureSubscription: 'sc-arkham'
               appType: 'webApp'
               appName: 'arkham-change-staging'
               package: '$(Pipeline.Workspace)/arkham-change-app-build/*.zip'
 
+  # ---- Deploy to Production ----
   - deployment: DeployToProd
-    displayName: Deploy to Prod (B1)
-    dependsOn: DeployToTest
+    displayName: Deploy to Production (B1)
+    dependsOn: DeployToStaging
     environment: arkham-change-prod
     strategy:
       runOnce:
@@ -88,8 +110,9 @@ stages:
           steps:
           - download: current
             artifact: arkham-change-app-build
+
           - task: AzureWebApp@1
-            displayName: Deploy to Prod app
+            displayName: Deploy to Prod App
             inputs:
               azureSubscription: 'sc-arkham'
               appType: 'webApp'

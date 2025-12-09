@@ -1,0 +1,51 @@
+# ============================================
+# PR Validation Pipeline (CI only)
+# Validates all pull requests targeting 'main'
+# ============================================
+
+name: PR-Validation-$(Date:yyyyMMdd)$(Rev:.r)
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+stages:
+- stage: BuildAndTest
+  displayName: Build & Test (PR Validation)
+  jobs:
+  - job: BuildTestJob
+    displayName: Restore, Build, Test
+    steps:
+
+    - task: UseDotNet@2
+      displayName: Use .NET 8 SDK
+      inputs:
+        packageType: 'sdk'
+        version: '8.x'
+
+    - task: DotNetCoreCLI@2
+      displayName: Restore
+      inputs:
+        command: 'restore'
+        projects: '**/*.csproj'
+
+    - task: DotNetCoreCLI@2
+      displayName: Build
+      inputs:
+        command: 'build'
+        projects: '**/*.csproj'
+        arguments: '-c $(buildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: Run tests
+      inputs:
+        command: 'test'
+        projects: '**/*Tests.csproj'
+        arguments: '--configuration $(buildConfiguration) --logger trx'
