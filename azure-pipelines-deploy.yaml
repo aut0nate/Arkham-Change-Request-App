@@ -1,16 +1,7 @@
-# ============================================
-# Main Branch Deployment Pipeline (CD)
-# Builds, tests, publishes, deploys to staging & prod
-# ============================================
-
 name: 1.0.$(Date:MMdd).$(Rev:r)
 
 trigger:
-  branches:
-    include:
-      - main
-
-pr: none
+  - main
 
 pool:
   vmImage: 'windows-latest'
@@ -20,16 +11,15 @@ variables:
   outputDir: 'publish'
 
 stages:
-# ------------------------
-# BUILD & TEST STAGE
-# ------------------------
+# ====================================
+# STAGE 1 — Build, Test, Package
+# ====================================
 - stage: Build
   displayName: Build, Test, Package
   jobs:
-  - job: BuildJob
+  - job: BuildAndTest
     displayName: Build & Test
     steps:
-
     - task: UseDotNet@2
       displayName: Use .NET 8 SDK
       inputs:
@@ -50,7 +40,7 @@ stages:
         arguments: '-c $(buildConfiguration) /p:Version=$(Build.BuildNumber)'
 
     - task: DotNetCoreCLI@2
-      displayName: Run tests
+      displayName: Run Tests
       inputs:
         command: 'test'
         projects: '**/*Tests.csproj'
@@ -62,7 +52,7 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: '**/ArkhamChangeRequest.csproj'
-        arguments: '-c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/$(outputDir) /p:Version=$(Build.BuildNumber)'
+        arguments: '-c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)/$(outputDir)'
         zipAfterPublish: true
 
     - task: PublishBuildArtifacts@1
@@ -71,18 +61,17 @@ stages:
         pathToPublish: '$(Build.ArtifactStagingDirectory)/$(outputDir)'
         artifactName: 'arkham-change-app-build'
 
-# ------------------------
-# DEPLOYMENT STAGE
-# ------------------------
-- stage: Deploy
-  displayName: Deploy to Staging, Await Approval, Deploy to Production
+
+# ====================================
+# STAGE 2 — Deploy to Staging (auto)
+# ====================================
+- stage: DeployStaging
+  displayName: Deploy to Staging (F1)
   dependsOn: Build
 
   jobs:
-
-  # ---- Deploy to Staging ----
   - deployment: DeployToStaging
-    displayName: Deploy to Staging (F1)
+    displayName: Deploy to Staging Environment
     environment: arkham-change-staging
     strategy:
       runOnce:
@@ -99,11 +88,18 @@ stages:
               appName: 'arkham-change-staging'
               package: '$(Pipeline.Workspace)/arkham-change-app-build/*.zip'
 
-  # ---- Deploy to Production ----
+
+# ====================================
+# STAGE 3 — Deploy to Production (approval required)
+# ====================================
+- stage: DeployProd
+  displayName: Deploy to Production (B1)
+  dependsOn: DeployStaging
+
+  jobs:
   - deployment: DeployToProd
-    displayName: Deploy to Production (B1)
-    dependsOn: DeployToStaging
-    environment: arkham-change-prod
+    displayName: Deploy to Production Environment
+    environment: arkham-change-prod   # <-- approval lives here
     strategy:
       runOnce:
         deploy:
