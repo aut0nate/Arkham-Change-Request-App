@@ -1,348 +1,205 @@
-# Arkham Change Management Application
+# Arkham Change Request App
 
-An end-to-end change management portal for a fictitious company named Arkham, with enterprise SSO (Auth0 SAML ↔ Azure Entra ID), approvals, audit trail, attachments, and a mobile-friendly dark UI. Built with ASP.NET Core 8 and deployed using Azure App Service, Azure SQL and Azure Storage.
+Arkham Change Request App is a simple internal change management portal for creating, reviewing and tracking IT change requests.
 
-> **Note**: This application was built with significant assistance from **OpenAI Codex**, demonstrating how AI tooling can accelerate Azure-focused learning and development.
+## Stack
 
-## Project Purpose
+- ASP.NET Core MVC on .NET 8
+- C#
+- Entity Framework Core
+- Microsoft Entra ID for authentication
+- SQLite for local and Docker development
+- Local filesystem attachment storage
+- Docker Compose for local and VPS deployment
+- xUnit for tests
 
-This project serves as a comprehensive example of:
+## Configuration
 
-- **Azure Services Integration**: Entra ID, App Service, SQL Database, Key Vault, Blob Storage.
-- **Enterprise Authentication**: Single sign-on with claims-based user management.
-- **Secure Deployment Practices**: Infrastructure as code, secrets management, CI/CD.
-- **Modern Web Application**: Responsive design, mobile optimization, security best practices.
+### Local Development
 
-The focus is on **Azure cloud architecture and DevOps practices** rather than custom web development.
+1. Create an `appsettings.Development.json` file:
 
-## Key Features
+   ```bash
+   cp appsettings.Development.example.json appsettings.Development.json
+   ```
 
-- **Enterprise Authentication**: Auth0 enterprise SAML → Azure Entra ID integration with fine-grained group checks and claims mapping.
-- **Professional UI**: Dark-themed interface matching enterprise standards with mobile-responsive design.
-- **Comprehensive Workflow**: Change submission, auto-prefilled requestor data, attachments, approvals dashboard, status updates, and audit trail.
-- **File Management**: Secure file upload via Azure Blob Storage (PDF, DOC, DOCX, images).
-- **Persistent Storage**: Azure SQL Database with Entity Framework Core.
-- **Mobile Optimised**: Touch-friendly interface for iPhone and mobile devices.
-- **Real-time Validation**: Form validation with user-friendly error handling and future-dated scheduling guardrails.
-- **Security First**: Azure Key Vault integration, HTTPS enforcement, anti-forgery protection, and Auth0 group-based authorization.
-- **Monitoring**: Application Insights integration for telemetry and diagnostics.
+2. Create a Microsoft Entra app registration for local development:
 
-## Architecture
+   Use these callback URLs for local development:
 
-- **Frontend**: ASP.NET Core 8.0 MVC with responsive CSS and mobile optimization.
-- **Authentication**: Azure Entra ID via Auth0 group claims.
-- **Backend**: .NET 8 with Entity Framework Core.
-- **Database**: Azure SQL Database.
-- **File Storage**: Azure Blob Storage with secure container access.
-- **Security**: Azure Key Vault for secrets management.
-- **Hosting**: Azure App Service with B1 tier.
-- **Monitoring**: Application Insights for telemetry and diagnostics.
+   ```text
+   https://localhost:7015/signin-oidc
+   https://localhost:7015/signout-callback-oidc
+   http://localhost:8080/signin-oidc
+   http://localhost:8080/signout-callback-oidc
+   ```
 
-## Azure Resources
+3. Update `appsettings.Development.json`:
 
-- **Resource Group**: `arkham-change-rg`
-- **SQL Server**: `arkhamdb`
-- **SQL Database**: `arkham-change`
-- **Storage account**: `arkhamchange`
-- **App Service**: `arkham-change`:
-  - App Insights enabled.
-  - Managed identity enabled with the following roles:
-    - Key Vault Secrets User on `arkham-kv`.
-    - Storage Blob Data Contributor on `arkhamchange`.
-- **Key Vault**: `arkham-kv`:
-  - `Auth0ClientSecret` containing the Auth0 client secret.
-  - `SqlConnectionString` containing the ADO.net connection string, obtained via the `arkham-change` db.
+   - `AzureAd:TenantId`
+   - `AzureAd:ClientId`
+   - `AzureAd:ClientSecret`
+   - `Database:Provider`
+   - `ConnectionStrings:Sqlite`
+   - `Storage:Provider`
+   - `Storage:LocalPath`
 
-### App Service Environment Variables
+Environment notes:
 
-Configure the following environment variables, adjusting values according to your specific configuration.
+- Keep [`appsettings.json`](/Users/nathan/Dev/Arkham-Change-Request-App/appsettings.json) as the shared base configuration.
+- `appsettings.Development.json` is for local non-Docker development only.
+- For local development, use `Sqlite` with `LocalFiles`.
+- A simple local SQLite path is `Data Source=App_Data/arkham-change.db`.
+- A simple local attachment path is `App_Data/uploads`.
+- You can supply the Entra secret through `AZUREAD_CLIENT_SECRET` instead of storing it in `appsettings.Development.json`.
 
-For **Auth0** values, check [Auth0 Configuration](#auth0-configuration) for details.
+### Docker
 
-| Name | Value / Notes |
-| --- | --- |
-| APPLICATIONINSIGHTS_CONNECTION_STRING | InstrumentationKey="";IngestionEndpoint="" |
-| ApplicationInsightsAgent_EXTENSION_VERSION | ~3 |
-| ASPNETCORE_HTTPS_PORT | 443 |
-| Auth0__AllowedGroupIds__0 | <GROUP_ID> |
-| Auth0__AllowedGroupIds__1 | <GROUP_ID> |
-| Auth0__AllowedGroups__0 | <GROUP_NAME> |
-| Auth0__AllowedGroups__1 | <GROUP_NAME> |
-| Auth0__ApproverGroupIds__0 | <GROUP_ID> |
-| Auth0__ApproverGroups__0 | <GROUP_NAME>  |
-| Auth0__CallbackPath | /callback |
-| Auth0__ClientId | <AUTH0_CLIENT_ID> |
-| Auth0__ClientSecret | <KEYVAULT_URL> |
-| Auth0__Connection | <AUTH0_CONNECTION> |
-| Auth0__Domain | <AUTH0_DOMAIN> |
-| Auth0__LogoutUrl | <AUTH0_LOGOUT_URL> |
-| BlobSettings__AccountName | arkhamchange |
-| BlobSettings__ContainerName | changerequests |
-| KeyVaultSettings__VaultUrl | <KEYVAULT_URL> |
-| SqlConnectionString | <KEYVAULT_URL> |
-| XDT_MicrosoftApplicationInsights_Mode | Recommended |
+1. Create a `.env.docker` file:
 
-### Custom Domain (Optional)
+   ```bash
+   cp .env.docker.example .env.docker
+   ```
 
-To configure a custom domain to use with your app, you will need to ensure that you own a domain name and have access to edit the DNS records.
+2. Update `.env.docker`:
 
-Click on the Custom Domains blade on the App Service and click **"Add custom domain"**.
+   - `AzureAd__TenantId`
+   - `AzureAd__ClientId`
+   - `AzureAd__ClientSecret`
+   - `ConnectionStrings__Sqlite`
+   - `Storage__LocalPath`
 
-Select the following options:
+Environment notes:
 
-- **Domain Provider**: All other domain services.
-- **TLS/SSL Certificate**: App Service Manage certificate.
-- **TLS/SSL Type**: SNI SSL.
-- **Domain**: Enter the domain name.
-- **Hostname Record Type**: CNAME.
+- Local Docker runs on `http://localhost:8080`.
+- Docker uses the same Entra development app registration, but you must include the `http://localhost:8080` callback URLs.
+- Docker stores the SQLite database, attachments and data protection keys in a named volume mounted at `/data`.
+- The default Docker SQLite path is `/data/arkham-change.db`.
+- The default Docker attachment path is `/data/uploads`.
 
-Make note of the CNAME and TXT record. These records will need to be added in your DNS providers management console.
+### VPS Production
 
-Once the DNS records have been added, click **"Validate"** and Once validation is complete, click **"Add"**.
+1. Create a production environment file:
 
-To provision an SSL certificate, click **"Add Binding"** and click **"Validate"** to add a new certificate.
+   ```bash
+   cp .env.production.example .env.production
+   ```
 
-Allow some for the validation to complete and resolve the URL.
+2. Create a Microsoft Entra production app registration:
 
-## Auth0 Configuration
+   Use these callback URLs for production:
 
-This section describes how to create the Auth0 Application and the SAML Enterprise Connection required for this project.
+   ```text
+   https://arkchg.autonate.dev/signin-oidc
+   https://arkchg.autonate.dev/signout-callback-oidc
+   ```
 
-### 1. Create an Auth0 Application (OIDC Relying Party)
+3. Update `.env.production`:
 
-1. In Auth0 Dashboard, go to **Applications → Applications**.
-2. Click **Create Application**.
-3. Name it "arkham-change-app".
-4. Choose **Regular Web Application**.
-5. After creation, configure:
+   - `AzureAd__TenantId`
+   - `AzureAd__ClientId`
+   - `AzureAd__ClientSecret`
+   - `ConnectionStrings__Sqlite`
+   - `Storage__LocalPath`
+   - `HOST_BIND`
+   - `HOST_PORT`
 
-   - **Allowed Callback URLs:**
+Environment notes:
 
-     ```bash
-     https://<domain>/callback
-     ```
+- Production uses [`docker-compose.prod.yml`](/Users/nathan/Dev/Arkham-Change-Request-App/docker-compose.prod.yml).
+- The app listens on `127.0.0.1:8080` by default and should sit behind `Nginx` or `Caddy`.
+- HTTPS redirection remains enabled in production.
+- Your reverse proxy should forward public HTTPS traffic from `https://arkchg.autonate.dev` to `http://127.0.0.1:8080`.
+- Keep development and production Entra app registrations separate.
 
-   - **Allowed Logout URLs:**
+## Run Locally
 
-     ```bash
-     https://<domain>/Account/SignedOut
-     ```
+1. Restore dependencies:
 
-6. The following values will be entered into your [Azure App Environment Variables](#app-service-environment-variables) or if [deploying locally](#local-development), your appsettings.Development.json file:
+   ```bash
+   dotnet restore
+   ```
 
-- **ISSUER_BASE_URL** (your Auth0 domain).
-- **CLIENT_ID** (your Auth0 application client id).
-- **SESSION_SECRET** (your Auth0 application secret).
+2. Start the app:
 
-### 2. Create the SAML Enterprise Connection in Auth0
+   ```bash
+   dotnet run --launch-profile https
+   ```
 
-1. Navigate to **Authentication → Enterprise → SAML**.
-2. Click **Create Connection**.
-3. Name it "arkham-change-app".
-4. Under **Settings**, configure:
+3. Open [https://localhost:7015](https://localhost:7015).
 
-   - **Sign-In URL** → obtained from Azure (see Azure Entra Configuration below).
-   - **Signing Certificate (Base64 CER)** →obtained from Azure (see Azure Entra Configuration below).
+## Run with Docker
 
-5. Under **Application Assignments**, ensure your newly created application is enabled.
+### Local Docker
 
-## Azure Entra Configuration (Enterprise Application)
+1. Build and start the container:
 
-This section describes the full process for configuring an Azure Enterprise Application.
+   ```bash
+   docker compose up --build
+   ```
 
-### 1. Create the Enterprise Application
+2. Then open [http://localhost:8080](http://localhost:8080).
 
-In Azure:
+Notes:
 
-1. Go to **Microsoft Entra ID**.
-2. Select **Enterprise Applications**.
-3. Click **New application**.
-4. Choose **Create your own application**.
-5. Choose **Integrate any other application you don't find…**.
-6. Name it "Arkham Change (Auth0)".
+- The SQLite database, uploaded attachments and data protection keys are stored in the named Docker volume `arkham-change-request-app_arkham-change-request-data`.
+- The main SQLite database file lives at `/data/arkham-change.db` inside the container.
+- Attachments live under `/data/uploads/`.
+- Data protection keys live under `/data/keys/`.
+- Local Docker disables HTTPS redirection so Entra sign-in can work with `http://localhost:8080`.
 
-### 2. Enable SAML-based Sign‑on
+### VPS Docker
 
-1. Under **Manage**, select **Single sign-on**.
-2. Choose **SAML**.
-3. Configure:
+1. Build and start the production container:
 
-   - **Identifier (Entity ID):**
+   ```bash
+   docker compose -f docker-compose.prod.yml up --build -d
+   ```
 
-     ```bash
-     urn:auth0:YOURTENANT:arkham-change-app
-     ```
+2. Put the app behind your reverse proxy and use `https://arkchg.autonate.dev`.
 
-   - **Reply URL:**
+Notes:
 
-     ```bash
-     https://YOUR_AUTH0_DOMAIN/login/callback?connection=arkham-change-app
-     ```
+- Production uses the same named Docker volume pattern for persistence.
+- The production compose file joins the external `edge-net` network.
+- Create the network once on the VPS before starting the stack:
 
-### 3. Create Application Groups in Azure
+  ```bash
+  docker network create edge-net
+  ```
 
-Create your security groups in Azure, for example:
+- The app remains private on `127.0.0.1:8080` and should not be exposed directly to the internet.
 
-- Arkham - Change Approvers
-- Arkham App - Administrator
-- Arkham App - Developer
-- Arkham App - Report Generator
-- Arkham App - Support Agent
-- Arkham App - Viewer
+## Access and Workflow
 
-Assign these groups to the Enterprise Application under:
+- Any authenticated user in your Entra tenant can currently sign in.
+- Signed-in users can create change requests.
+- Signed-in users can currently access approval actions as part of the first-pass local workflow.
+- The main create request page is the default landing page.
+- Attachments are stored locally in development and Docker.
 
-Enterprise Application → Users and Groups → Add User/Group.
+## Backups and Persistence
 
-### 4. Configure the SAML Group Claim
+- Local non-Docker development stores application data in `App_Data/`, which is ignored by Git.
+- Docker stores application data in a named volume, not in the repository.
+- Rebuilding or recreating the container will not remove your data as long as the named volume remains in place.
+- Do not run `docker compose down -v` if you want to keep your data.
+- Back up Docker data by copying the SQLite database and uploads from the named volume.
 
-In the Enterprise Application:
-
-1. Go to **Single Sign-On**.
-2. Click **Edit** on **Attribute and Claims**.
-3. Click **Add a Group Claim**.
-4. Choose **Groups assigned to the application**.
-5. Choose **Group ID** as the **Source Attribute**.
-6. Click Save.
-
-Azure will now emit:
+Useful commands:
 
 ```bash
-http://schemas.microsoft.com/ws/2008/06/identity/claims/groups
+docker volume inspect arkham-change-request-app_arkham-change-request-data
+docker compose down
+docker compose -f docker-compose.prod.yml down
 ```
 
-### 5. Configure Auth0 to Map the SAML Group Claim
+## AI-Assisted Development
 
-In Auth0:
+Arkham Change Request App was built and maintained with **OpenAI Codex** assistance. This repository includes an [`AGENTS.md`](/Users/nathan/Dev/Arkham-Change-Request-App/AGENTS.md) file, which provides structured instructions and context for AI coding agents. It defines expectations, constraints and project-specific guidance to help keep contributions consistent and reliable.
 
-1. Go to **Authentication → Enterprise → SAML → arkham-change-app**.
-2. Open **Mappings**.
-3. Add:
+## Contributions
 
-```json
-"groups": "http://schemas.microsoft.com/ws/2008/06/identity/claims/groups"
-```
+Contributions, ideas and suggestions are welcome.
 
-This maps Azure's SAML group IDs into the Auth0 user profile.
-
-### 6. Add Group Claims to the ID Token (Auth0 Action)
-
-In Auth0:
-
-1. Go to **Actions → Triggers → Post Login**.
-2. Click **Add Action → Create a Custom Action**.
-3. Provide the following information:
-
-   - **Name:** AddGroupsToIDToken.
-   - **Trigger:** Login/Post Login.
-   - **Runtime:** Node 22.
-4. Click **Create**.
-5. Remove any code in the code block and paste the following:
-
-    ```js
-    exports.onExecutePostLogin = async (event, api) => {
-    const groups = event.user.groups;
-    if (groups) {
-        const groupsArray = Array.isArray(groups)
-        ? groups
-        : String(groups).split(',');
-        api.idToken.setCustomClaim("https://arkham.live/groups", groupsArray);
-    }
-    };
-    ```
-
-6. Click **Deploy**.
-7. Add this Action to your **Login Flow**:
-
-## Deploying to Azure
-
-```bash
-# Publish app.zip
-dotnet publish -c Release -o publish
-Compress-Archive -Path publish\* -DestinationPath app.zip -Force
-
-# Deploy web app
-az webapp deploy --resource-group arkham-change-rg --name arkham-change --src-path app.zip --type zip
-
-# Optional cleanup
-Remove-Item publish -Recurse -Force; Remove-Item app.zip
-```
-
-## Local Development
-
-To run the application locally follow the below steps:
-
-### Prerequisites
-
-- **.NET 8 SDK**
-- **SQL Server**
-  - A local instance of SQL Server (Express/Developer) edition.
-  - A DB named `ArkhamChangeRequests`.
-- **SQL Server Management Studio (SSMS)**
-- **VS Code**
-- **Azurite**:
-  - Install by running `npm install -g azurite`.
-
-### Run Azurite
-
-```bash
-azurite --location "C:\\Users\\<user>\\Dev\\Azurite" --silent --debug "C:\\Users\\<user>\\Dev\\Azurite"
-```
-
-### appsettings.Development.json
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=<LOCAL_IP>;Database=ArkhamChangeRequests;User Id=<DB_USER>;Password=<DB_PASSWORD>;Encrypt=False;TrustServerCertificate=True"
-  },
-  "Storage": {
-    "ConnectionString": "UseDevelopmentStorage=true",
-    "Container": "arkhamstorageaccount"
-  },
-  "Auth0": {
-    "Domain": "<AUTH0_DOMAIN>",
-    "ClientId": "<AUTH0_CLIENT_ID>",
-    "ClientSecret": "<AUTH0_SECRET>",
-    "Connection": "arkham-change-app",
-    "CallbackPath": "/callback",
-    "LogoutUrl": "http://localhost:5246",
-    "AllowedGroups": [],
-    "AllowedGroupIds": [],
-    "ApproverGroups": [],
-    "ApproverGroupIds": [],
-    "PreferredNameClaimTypes": [ "http://schemas.microsoft.com/identity/claims/displayname" ]
-  },
-  "BlobSettings": {
-    "AccountName": "",
-    "ContainerName": "arkhamstorageaccount"
-  },
-  "Services": {
-    "Catalog": [
-      "Arkham Automate",
-      "Arkham AI App Builder",
-      "Arkham Consulting",
-      "Arkham RPA",
-      "Arkham Edge Computing",
-      "Arkham Fraud Detect",
-      "Other"
-    ]
-  }
-}
-```
-
-### Dotnet Commands
-
-```bash
-dotnet restore
-dotnet run
-# open http://localhost:5246
-```
-
-## Troubleshooting
-
-- **Access denied (groups)**: Confirm the user is in AllowedGroups/AllowedGroupIds; check Auth0/Entra claims; ensure env vars are set.
-- **Name shows as email**: Ensure the SAML assertion includes a display name claim; PreferredNameClaimTypes configured.
-- **SQL connectivity**: Check `SqlConnectionString` secret, SQL firewall “Allow Azure services” enabled, DB reachable.
-- **Startup hangs during deploy**: Set `ASPNETCORE_HTTPS_PORT=443`; tail logs `az webapp log tail -g arkham-change-rg -n arkham-change`.
-- **Blob access**: Managed identity needs Storage Blob Data Contributor on `arkhamchange`; container `changerequests` must exist.
+If you have improvements, feature ideas or bug fixes, feel free to open an issue or submit a pull request. All contributions are appreciated and help improve the project.

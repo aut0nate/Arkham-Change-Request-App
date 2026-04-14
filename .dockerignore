@@ -1,0 +1,11 @@
+bin/
+obj/
+.git/
+.gitignore
+.vs/
+.vscode/
+App_Data/
+docker-data/
+README.md
+AGENTS.md
+appsettings.Development.json

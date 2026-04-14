@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -11,13 +9,6 @@ namespace ArkhamChangeRequest.Controllers;
 [AllowAnonymous]
 public class AccountController : Controller
 {
-    private readonly IConfiguration _configuration;
-
-    public AccountController(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
-
     [HttpGet]
     public IActionResult Login(string? returnUrl = null, bool forceNewSession = false)
     {
@@ -44,9 +35,7 @@ public class AccountController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult Logout()
     {
-        var callbackUrl = Url.Action(nameof(SignedOut), "Account", null, Request.Scheme)
-                         ?? _configuration["Auth0:LogoutUrl"]
-                         ?? "/";
+        var callbackUrl = Url.Action(nameof(SignedOut), "Account", null, Request.Scheme) ?? "/";
 
         var authenticationProperties = new AuthenticationProperties
         {
@@ -68,20 +57,6 @@ public class AccountController : Controller
     [HttpGet]
     public IActionResult AccessDenied()
     {
-        var allowedGroups = (_configuration.GetSection("Auth0:AllowedGroups").Get<string[]>() ?? Array.Empty<string>())
-            .Select(g => g?.Trim())
-            .Where(g => !string.IsNullOrWhiteSpace(g))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-        ViewBag.AllowedGroups = allowedGroups;
-
-        var groupClaimTypes = _configuration.GetSection("Auth0:GroupClaimTypes").Get<string[]>() ?? Array.Empty<string>();
-        var userGroupClaims = User?.Claims?
-            .Where(c => groupClaimTypes.Any(type => string.Equals(type, c.Type, StringComparison.OrdinalIgnoreCase)))
-            .Select(c => $"{c.Type}: {c.Value}")
-            .ToArray() ?? Array.Empty<string>();
-        ViewBag.UserGroupClaims = userGroupClaims;
-
         return View();
     }
 }

@@ -8,12 +8,12 @@ echo "🔧 Configuring Arkham Change Request App Registration..."
 # Variables - Update these with your values
 APP_NAME="Arkham Change Request"
 REDIRECT_URIS=(
-    "https://localhost:7086/signin-oidc"
-    "https://arkham-change-requests.azurewebsites.net/signin-oidc"
+    "https://localhost:7015/signin-oidc"
+    "https://change.example.com/signin-oidc"
 )
 LOGOUT_URIS=(
-    "https://localhost:7086/signout-callback-oidc"
-    "https://arkham-change-requests.azurewebsites.net/signout-callback-oidc"
+    "https://localhost:7015/signout-callback-oidc"
+    "https://change.example.com/signout-callback-oidc"
 )
 
 echo "📋 Please ensure you have the following information ready:"

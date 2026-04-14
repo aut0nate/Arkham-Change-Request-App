@@ -1,0 +1,31 @@
+services:
+  arkham-change-request:
+    container_name: arkham-change-request
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${HOST_PORT:-8080}:8080"
+    env_file:
+      - .env.docker
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      App__DisableHttpsRedirection: "true"
+      Database__Provider: ${Database__Provider:-Sqlite}
+      ConnectionStrings__Sqlite: ${ConnectionStrings__Sqlite:-Data Source=/data/arkham-change.db}
+      Storage__Provider: ${Storage__Provider:-LocalFiles}
+      Storage__LocalPath: ${Storage__LocalPath:-/data/uploads}
+      DataProtection__Path: ${DataProtection__Path:-/data/keys}
+    volumes:
+      - arkham-change-request-data:/data
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+
+volumes:
+  arkham-change-request-data:
