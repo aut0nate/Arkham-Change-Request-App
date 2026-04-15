@@ -52,47 +52,68 @@ builder.Services
         options.ClientSecret = clientSecret;
         options.SaveTokens = true;
         options.ResponseType = OpenIdConnectResponseType.Code;
-        options.ResponseMode = OpenIdConnectResponseMode.FormPost;
         options.UsePkce = true;
-        options.Events ??= new OpenIdConnectEvents();
-        options.Events.OnRedirectToIdentityProvider = context =>
-        {
-            if (!string.IsNullOrWhiteSpace(publicOrigin))
-            {
-                context.ProtocolMessage.RedirectUri = BuildAbsoluteUri(publicOrigin, callbackPath);
-            }
+        var existingEvents = options.Events ?? new OpenIdConnectEvents();
+        var existingRedirectToIdentityProvider = existingEvents.OnRedirectToIdentityProvider;
+        var existingRedirectToIdentityProviderForSignOut = existingEvents.OnRedirectToIdentityProviderForSignOut;
+        var existingTokenValidated = existingEvents.OnTokenValidated;
 
-            return Task.CompletedTask;
-        };
-        options.Events.OnRedirectToIdentityProviderForSignOut = context =>
+        options.Events = new OpenIdConnectEvents
         {
-            if (!string.IsNullOrWhiteSpace(publicOrigin))
+            OnRedirectToIdentityProvider = async context =>
             {
-                context.ProtocolMessage.PostLogoutRedirectUri = BuildAbsoluteUri(publicOrigin, signedOutCallbackPath);
-            }
-
-            return Task.CompletedTask;
-        };
-        options.Events.OnTokenValidated = context =>
-        {
-            if (context.Principal?.Identity is ClaimsIdentity identity)
-            {
-                var displayName = ResolveDisplayName(identity);
-                if (!string.IsNullOrWhiteSpace(displayName))
+                if (existingRedirectToIdentityProvider != null)
                 {
-                    ReplaceClaim(identity, ClaimTypes.Name, displayName);
-                    ReplaceClaim(identity, "name", displayName);
+                    await existingRedirectToIdentityProvider(context);
                 }
 
-                var emailAddress = ResolveEmailAddress(identity);
-                if (!string.IsNullOrWhiteSpace(emailAddress))
+                if (!string.IsNullOrWhiteSpace(publicOrigin))
                 {
-                    ReplaceClaim(identity, ClaimTypes.Email, emailAddress);
-                    ReplaceClaim(identity, "email", emailAddress);
+                    context.ProtocolMessage.RedirectUri = BuildAbsoluteUri(publicOrigin, callbackPath);
                 }
-            }
 
-            return Task.CompletedTask;
+                return;
+            },
+            OnRedirectToIdentityProviderForSignOut = async context =>
+            {
+                if (existingRedirectToIdentityProviderForSignOut != null)
+                {
+                    await existingRedirectToIdentityProviderForSignOut(context);
+                }
+
+                if (!string.IsNullOrWhiteSpace(publicOrigin))
+                {
+                    context.ProtocolMessage.PostLogoutRedirectUri = BuildAbsoluteUri(publicOrigin, signedOutCallbackPath);
+                }
+
+                return;
+            },
+            OnTokenValidated = async context =>
+            {
+                if (existingTokenValidated != null)
+                {
+                    await existingTokenValidated(context);
+                }
+
+                if (context.Principal?.Identity is ClaimsIdentity identity)
+                {
+                    var displayName = ResolveDisplayName(identity);
+                    if (!string.IsNullOrWhiteSpace(displayName))
+                    {
+                        ReplaceClaim(identity, ClaimTypes.Name, displayName);
+                        ReplaceClaim(identity, "name", displayName);
+                    }
+
+                    var emailAddress = ResolveEmailAddress(identity);
+                    if (!string.IsNullOrWhiteSpace(emailAddress))
+                    {
+                        ReplaceClaim(identity, ClaimTypes.Email, emailAddress);
+                        ReplaceClaim(identity, "email", emailAddress);
+                    }
+                }
+
+                return;
+            }
         };
     },
     cookieOptions =>
