@@ -71,4 +71,4 @@ After saving the proxy host:
 - If the proxy host is offline, verify the app is reachable on `http://127.0.0.1:8080/health`
 - If Nginx Proxy Manager cannot reach the app by container name, verify both containers are attached to `edge-net`
 - If Entra sign-in fails after redirect, verify the production app registration uses the exact HTTPS callback URLs
-- If you hit a redirect loop, confirm Nginx Proxy Manager is forwarding `X-Forwarded-Proto` and the app is still running with `App__DisableHttpsRedirection=false`
+- If you hit a redirect loop, confirm Nginx Proxy Manager is forwarding `X-Forwarded-Proto` and the app is running with `App__DisableHttpsRedirection=true` behind the proxy

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,6 +51,9 @@ builder.Services
         builder.Configuration.Bind("AzureAd", options);
         options.ClientSecret = clientSecret;
         options.SaveTokens = true;
+        options.ResponseType = OpenIdConnectResponseType.Code;
+        options.ResponseMode = OpenIdConnectResponseMode.FormPost;
+        options.UsePkce = true;
         options.Events ??= new OpenIdConnectEvents();
         options.Events.OnRedirectToIdentityProvider = context =>
         {

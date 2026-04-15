@@ -108,7 +108,7 @@ Environment notes:
 
 - Production uses [`docker-compose.prod.yml`](/Users/nathan/Dev/Arkham-Change-Request-App/docker-compose.prod.yml).
 - The app listens on `127.0.0.1:8080` by default and should sit behind `Nginx` or `Caddy`.
-- HTTPS redirection remains enabled in production.
+- HTTPS is enforced by the reverse proxy, and the app-level HTTPS redirection should be disabled for the proxied container deployment.
 - Your reverse proxy should forward public HTTPS traffic from `https://arkham-change.autonate.dev` to `http://127.0.0.1:8080`.
 - Keep development and production Entra app registrations separate.
 - The included VPS deployment helper is [`scripts/deploy-vps.sh`](/Users/nathan/Dev/Arkham-Change-Request-App/scripts/deploy-vps.sh).
