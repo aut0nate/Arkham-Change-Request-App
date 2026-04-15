@@ -224,6 +224,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=ChangeRequest}/{action=Create}/{id?}");
 app.MapRazorPages();
+app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 
 app.Run();
 

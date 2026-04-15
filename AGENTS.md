@@ -80,6 +80,7 @@ Important keys:
 - `EnsureCreated()` is used on startup; there are no EF migrations in the repository yet
 - Local Docker uses SQLite plus local filesystem uploads under the named Docker volume mounted at `/data`
 - Local Docker persists application data in a named Docker volume mounted at `/data`
+- The app exposes `/health` for lightweight container and reverse-proxy verification
 - Production Docker also persists application data in a named Docker volume mounted at `/data`
 
 ## Code style guidelines
@@ -112,6 +113,7 @@ Important keys:
 - Local Docker runs on `http://localhost:8080` with HTTPS redirection disabled by configuration
 - Docker Compose is the intended local container entrypoint, with Entra settings supplied by `.env.docker`
 - `docker-compose.prod.yml` is the intended VPS entrypoint, with Entra settings supplied by `.env.production`
+- [`scripts/deploy-vps.sh`](/Users/nathan/Dev/Arkham-Change-Request-App/scripts/deploy-vps.sh) is the recommended first-pass VPS deployment command wrapper
 
 ## Constraints and project rules
 

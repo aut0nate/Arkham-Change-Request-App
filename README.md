@@ -111,6 +111,7 @@ Environment notes:
 - HTTPS redirection remains enabled in production.
 - Your reverse proxy should forward public HTTPS traffic from `https://arkchg.autonate.dev` to `http://127.0.0.1:8080`.
 - Keep development and production Entra app registrations separate.
+- The included VPS deployment helper is [`scripts/deploy-vps.sh`](/Users/nathan/Dev/Arkham-Change-Request-App/scripts/deploy-vps.sh).
 
 ## Run Locally
 
@@ -170,6 +171,28 @@ Notes:
 
 - The app remains private on `127.0.0.1:8080` and should not be exposed directly to the internet.
 
+### Nginx Proxy Manager
+
+Use `Nginx Proxy Manager` to publish `https://arkchg.autonate.dev`.
+
+- **Domain Names**: `arkchg.autonate.dev`
+- **Scheme**: `http`
+- **Forward Hostname / IP**: `arkham-change-request`
+- **Forward Port**: `8080`
+- **Block Common Exploits**: enabled
+- **Websockets Support**: enabled
+
+In the SSL tab:
+
+- request a Let's Encrypt certificate
+- enable `Force SSL`
+- enable `HTTP/2`
+- enable `HSTS` if you want strict HTTPS
+
+`Nginx Proxy Manager` must also be attached to the external Docker network `edge-net`.
+
+For the full step-by-step setup, see [`NGINX_PROXY_MANAGER.md`](/Users/nathan/Dev/Arkham-Change-Request-App/NGINX_PROXY_MANAGER.md).
+
 ## Access and Workflow
 
 - Any authenticated user in your Entra tenant can currently sign in.
@@ -192,6 +215,8 @@ Useful commands:
 docker volume inspect arkham-change-request-app_arkham-change-request-data
 docker compose down
 docker compose -f docker-compose.prod.yml down
+./scripts/deploy-vps.sh
+curl -I http://127.0.0.1:8080/health
 ```
 
 ## AI-Assisted Development
