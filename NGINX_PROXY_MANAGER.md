@@ -1,6 +1,6 @@
 # Nginx Proxy Manager Setup
 
-This guide configures `arkchg.autonate.dev` in Nginx Proxy Manager for the Arkham Change Request App running through [`docker-compose.prod.yml`](/Users/nathan/Dev/Arkham-Change-Request-App/docker-compose.prod.yml).
+This guide configures `arkham-change.autonate.dev` in Nginx Proxy Manager for the Arkham Change Request App running through [`docker-compose.prod.yml`](/Users/nathan/Dev/Arkham-Change-Request-App/docker-compose.prod.yml).
 
 ## Prerequisites
 
@@ -13,8 +13,8 @@ This guide configures `arkchg.autonate.dev` in Nginx Proxy Manager for the Arkha
 - The production Entra app registration includes:
 
   ```text
-  https://arkchg.autonate.dev/signin-oidc
-  https://arkchg.autonate.dev/signout-callback-oidc
+  https://arkham-change.autonate.dev/signin-oidc
+  https://arkham-change.autonate.dev/signout-callback-oidc
   ```
 
 - Nginx Proxy Manager is running in Docker and attached to the external `edge-net` network.
@@ -37,7 +37,7 @@ docker network inspect edge-net
 
 In Nginx Proxy Manager, create a new **Proxy Host** with:
 
-- **Domain Names**: `arkchg.autonate.dev`
+- **Domain Names**: `arkham-change.autonate.dev`
 - **Scheme**: `http`
 - **Forward Hostname / IP**: `arkham-change-request`
 - **Forward Port**: `8080`
@@ -51,7 +51,7 @@ If Nginx Proxy Manager cannot resolve the Docker service name, use the VPS IP ad
 
 In the **SSL** tab:
 
-- request a new Let's Encrypt certificate for `arkchg.autonate.dev`
+- request a new Let's Encrypt certificate for `arkham-change.autonate.dev`
 - enable **Force SSL**
 - enable **HTTP/2**
 - enable **HSTS** if you are happy to commit the domain to HTTPS
@@ -60,9 +60,9 @@ In the **SSL** tab:
 
 After saving the proxy host:
 
-1. open `https://arkchg.autonate.dev/health`
+1. open `https://arkham-change.autonate.dev/health`
 2. confirm it returns HTTP `200`
-3. open `https://arkchg.autonate.dev`
+3. open `https://arkham-change.autonate.dev`
 4. sign in with a production Entra account
 5. confirm the app returns to the site after login
 

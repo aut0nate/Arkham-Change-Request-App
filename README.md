@@ -90,8 +90,8 @@ Environment notes:
    Use these callback URLs for production:
 
    ```text
-   https://arkchg.autonate.dev/signin-oidc
-   https://arkchg.autonate.dev/signout-callback-oidc
+   https://arkham-change.autonate.dev/signin-oidc
+   https://arkham-change.autonate.dev/signout-callback-oidc
    ```
 
 3. Update `.env.production`:
@@ -109,7 +109,7 @@ Environment notes:
 - Production uses [`docker-compose.prod.yml`](/Users/nathan/Dev/Arkham-Change-Request-App/docker-compose.prod.yml).
 - The app listens on `127.0.0.1:8080` by default and should sit behind `Nginx` or `Caddy`.
 - HTTPS redirection remains enabled in production.
-- Your reverse proxy should forward public HTTPS traffic from `https://arkchg.autonate.dev` to `http://127.0.0.1:8080`.
+- Your reverse proxy should forward public HTTPS traffic from `https://arkham-change.autonate.dev` to `http://127.0.0.1:8080`.
 - Keep development and production Entra app registrations separate.
 - The included VPS deployment helper is [`scripts/deploy-vps.sh`](/Users/nathan/Dev/Arkham-Change-Request-App/scripts/deploy-vps.sh).
 
@@ -157,7 +157,7 @@ Notes:
    docker compose -f docker-compose.prod.yml up --build -d
    ```
 
-2. Put the app behind your reverse proxy and use `https://arkchg.autonate.dev`.
+2. Put the app behind your reverse proxy and use `https://arkham-change.autonate.dev`.
 
 Notes:
 
@@ -173,9 +173,9 @@ Notes:
 
 ### Nginx Proxy Manager
 
-Use `Nginx Proxy Manager` to publish `https://arkchg.autonate.dev`.
+Use `Nginx Proxy Manager` to publish `https://arkham-change.autonate.dev`.
 
-- **Domain Names**: `arkchg.autonate.dev`
+- **Domain Names**: `arkham-change.autonate.dev`
 - **Scheme**: `http`
 - **Forward Hostname / IP**: `arkham-change-request`
 - **Forward Port**: `8080`

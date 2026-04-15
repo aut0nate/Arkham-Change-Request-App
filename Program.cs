@@ -24,6 +24,9 @@ if (!string.IsNullOrWhiteSpace(keyVaultUrl))
 var tenantId = builder.Configuration["AzureAd:TenantId"];
 var clientId = builder.Configuration["AzureAd:ClientId"];
 var clientSecret = builder.Configuration["AzureAd:ClientSecret"] ?? builder.Configuration["AZUREAD_CLIENT_SECRET"];
+var publicOrigin = builder.Configuration["App:PublicOrigin"];
+var callbackPath = builder.Configuration["AzureAd:CallbackPath"] ?? "/signin-oidc";
+var signedOutCallbackPath = builder.Configuration["AzureAd:SignedOutCallbackPath"] ?? "/signout-callback-oidc";
 
 if (string.IsNullOrWhiteSpace(tenantId))
 {
@@ -48,6 +51,24 @@ builder.Services
         options.ClientSecret = clientSecret;
         options.SaveTokens = true;
         options.Events ??= new OpenIdConnectEvents();
+        options.Events.OnRedirectToIdentityProvider = context =>
+        {
+            if (!string.IsNullOrWhiteSpace(publicOrigin))
+            {
+                context.ProtocolMessage.RedirectUri = BuildAbsoluteUri(publicOrigin, callbackPath);
+            }
+
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToIdentityProviderForSignOut = context =>
+        {
+            if (!string.IsNullOrWhiteSpace(publicOrigin))
+            {
+                context.ProtocolMessage.PostLogoutRedirectUri = BuildAbsoluteUri(publicOrigin, signedOutCallbackPath);
+            }
+
+            return Task.CompletedTask;
+        };
         options.Events.OnTokenValidated = context =>
         {
             if (context.Principal?.Identity is ClaimsIdentity identity)
@@ -280,6 +301,18 @@ static void ReplaceClaim(ClaimsIdentity identity, string claimType, string value
     }
 
     identity.AddClaim(new Claim(claimType, value));
+}
+
+static string BuildAbsoluteUri(string origin, string path)
+{
+    var normalizedOrigin = origin.Trim().TrimEnd('/');
+    var normalizedPath = string.IsNullOrWhiteSpace(path) ? "/" : path.Trim();
+    if (!normalizedPath.StartsWith('/'))
+    {
+        normalizedPath = "/" + normalizedPath;
+    }
+
+    return normalizedOrigin + normalizedPath;
 }
 
 static string ResolveDatabaseProvider(string? configuredProvider, string? sqlServerConnectionString, string? sqliteConnectionString)
