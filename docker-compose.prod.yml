@@ -9,7 +9,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
-      App__DisableHttpsRedirection: "false"
+      App__DisableHttpsRedirection: ${App__DisableHttpsRedirection:-true}
       Database__Provider: ${Database__Provider:-Sqlite}
       ConnectionStrings__Sqlite: ${ConnectionStrings__Sqlite:-Data Source=/data/arkham-change.db}
       Storage__Provider: ${Storage__Provider:-LocalFiles}
