@@ -53,66 +53,59 @@ builder.Services
         options.SaveTokens = true;
         options.ResponseType = OpenIdConnectResponseType.Code;
         options.UsePkce = true;
-        var existingEvents = options.Events ?? new OpenIdConnectEvents();
-        var existingRedirectToIdentityProvider = existingEvents.OnRedirectToIdentityProvider;
-        var existingRedirectToIdentityProviderForSignOut = existingEvents.OnRedirectToIdentityProviderForSignOut;
-        var existingTokenValidated = existingEvents.OnTokenValidated;
+        options.Events ??= new OpenIdConnectEvents();
+        var existingRedirectToIdentityProvider = options.Events.OnRedirectToIdentityProvider;
+        var existingRedirectToIdentityProviderForSignOut = options.Events.OnRedirectToIdentityProviderForSignOut;
+        var existingTokenValidated = options.Events.OnTokenValidated;
 
-        options.Events = new OpenIdConnectEvents
+        options.Events.OnRedirectToIdentityProvider = async context =>
         {
-            OnRedirectToIdentityProvider = async context =>
+            if (existingRedirectToIdentityProvider != null)
             {
-                if (existingRedirectToIdentityProvider != null)
-                {
-                    await existingRedirectToIdentityProvider(context);
-                }
+                await existingRedirectToIdentityProvider(context);
+            }
 
-                if (!string.IsNullOrWhiteSpace(publicOrigin))
-                {
-                    context.ProtocolMessage.RedirectUri = BuildAbsoluteUri(publicOrigin, callbackPath);
-                }
-
-                return;
-            },
-            OnRedirectToIdentityProviderForSignOut = async context =>
+            if (!string.IsNullOrWhiteSpace(publicOrigin))
             {
-                if (existingRedirectToIdentityProviderForSignOut != null)
-                {
-                    await existingRedirectToIdentityProviderForSignOut(context);
-                }
+                context.ProtocolMessage.RedirectUri = BuildAbsoluteUri(publicOrigin, callbackPath);
+            }
+        };
 
-                if (!string.IsNullOrWhiteSpace(publicOrigin))
-                {
-                    context.ProtocolMessage.PostLogoutRedirectUri = BuildAbsoluteUri(publicOrigin, signedOutCallbackPath);
-                }
-
-                return;
-            },
-            OnTokenValidated = async context =>
+        options.Events.OnRedirectToIdentityProviderForSignOut = async context =>
+        {
+            if (existingRedirectToIdentityProviderForSignOut != null)
             {
-                if (existingTokenValidated != null)
+                await existingRedirectToIdentityProviderForSignOut(context);
+            }
+
+            if (!string.IsNullOrWhiteSpace(publicOrigin))
+            {
+                context.ProtocolMessage.PostLogoutRedirectUri = BuildAbsoluteUri(publicOrigin, signedOutCallbackPath);
+            }
+        };
+
+        options.Events.OnTokenValidated = async context =>
+        {
+            if (existingTokenValidated != null)
+            {
+                await existingTokenValidated(context);
+            }
+
+            if (context.Principal?.Identity is ClaimsIdentity identity)
+            {
+                var displayName = ResolveDisplayName(identity);
+                if (!string.IsNullOrWhiteSpace(displayName))
                 {
-                    await existingTokenValidated(context);
+                    ReplaceClaim(identity, ClaimTypes.Name, displayName);
+                    ReplaceClaim(identity, "name", displayName);
                 }
 
-                if (context.Principal?.Identity is ClaimsIdentity identity)
+                var emailAddress = ResolveEmailAddress(identity);
+                if (!string.IsNullOrWhiteSpace(emailAddress))
                 {
-                    var displayName = ResolveDisplayName(identity);
-                    if (!string.IsNullOrWhiteSpace(displayName))
-                    {
-                        ReplaceClaim(identity, ClaimTypes.Name, displayName);
-                        ReplaceClaim(identity, "name", displayName);
-                    }
-
-                    var emailAddress = ResolveEmailAddress(identity);
-                    if (!string.IsNullOrWhiteSpace(emailAddress))
-                    {
-                        ReplaceClaim(identity, ClaimTypes.Email, emailAddress);
-                        ReplaceClaim(identity, "email", emailAddress);
-                    }
+                    ReplaceClaim(identity, ClaimTypes.Email, emailAddress);
+                    ReplaceClaim(identity, "email", emailAddress);
                 }
-
-                return;
             }
         };
     },
